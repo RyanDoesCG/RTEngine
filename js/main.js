@@ -83,15 +83,12 @@
     let SmokeMaterial = 1;
 
     var SpherePositions = [ 
-        -0.9, 1.1, 0.9,
-        0.9, 1.1, 1.0
+        0.0, 0.6, 0.0
     ]
     var SphereColours = [ 
-        1.0, 0.0, 0.0, 1.0,
-        0.2, 0.2, 0.2, 1.0
+        1.0, 0.0, 0.0, 0.0
     ]
     var SphereSizes = [ 
-        1.0,
         0.5
     ]
     var SphereMaterialIDs = [
@@ -110,18 +107,7 @@
         0.0, 3.9, 3.6,  // roof 3
         0.0, 3.9, -3.6,  // roof 4
         1.0, 2.0, 0.0,   // middle platform
-        -3.0, 2.0, 0.0,  // step
-
-        0.0, 2.6, 0.0 // volumetric
-
-
-        /* Cornell
-        0.0, 0.0, 0.0,
-        0.0, 4.0, 0.0,
-       -2.0, 2.0, 0.0,
-        2.0, 2.0, 0.0,
-        0.0, 2.0, 2.0
-        */
+        -3.0, 2.0, 0.0   // step
     ]
 
     var BoxColours = [
@@ -135,41 +121,22 @@
         0.5, 0.5, 0.5, 0.0, // roof 3
         0.5, 0.5, 0.5, 0.0, // roof 4
         0.5, 0.5, 0.5, 0.0, // middle platform 
-        0.5, 0.5, 0.5, 0.0, // step 1
-        
-        1.0, 0.01, 1.0, 0.5 // volumetric
+        0.5, 0.5, 0.5, 0.0 // step 1
 
-        /* Cornell
-        0.5, 0.5, 0.5, 0.0,
-        0.5, 0.5, 0.5, 0.0,
-        0.5, 0.5, 0.5, 0.0,
-        0.5, 0.5, 0.5, 0.0,
-        0.5, 0.5, 0.5, 0.0
-        */
     ]
 
     var BoxSizes = [
-        4.0, 0.1, 4.0,  // floor
-        0.1, 2.0, 4.0,  // right wall
-        0.1, 2.0, 4.0,  // left wall
-        4.0, 2.0, 0.1,  // front wall
-        4.0, 2.0, 0.1,  // back wall
-        1.5, 0.1, 4.0,  // roof 1
-        1.5, 0.1, 4.0,  // roof 2
+        4.0, 0.1, 4.0, // floor
+        0.1, 2.0, 4.0, // right wall
+        0.1, 2.0, 4.0, // left wall
+        4.0, 2.0, 0.1, // front wall
+        4.0, 2.0, 0.1, // back wall
+        1.5, 0.1, 4.0, // roof 1
+        1.5, 0.1, 4.0, // roof 2
         1.5, 0.1, 0.25, // roof 3
         1.5, 0.1, 0.25, // roof 4
-        3.0, 0.1, 4.0,  // middle platform
-        1.5, 0.1, 0.25, // step 1
-
-        0.5, 0.5, 0.5 // volumetric
-
-        /* Cornell
-        2.0, 0.1, 2.0,
-        2.0, 0.1, 2.0,
-        0.1, 2.1, 2.0,
-        0.1, 2.1, 2.0,
-        2.1, 2.1, 0.1
-        */
+        3.0, 0.1, 4.0, // middle platform
+        1.5, 0.1, 0.25 // step 1
     ]
 
     var BoxMaterialIDs = [
@@ -184,27 +151,39 @@
         DiffuseMaterial, // roof 4
         DiffuseMaterial, // middle platform
         DiffuseMaterial, // step 1
-        DiffuseMaterial    // volumetric
+        DiffuseMaterial,    // volumetric
+        DiffuseMaterial,
+        DiffuseMaterial
     ]
 
     var AreaLightPositions = [
-        0.0, 4.2, 0.0   // light 
+        0.0, 4.2, 0.0,
+        0.0, 1.0, 0.0
     ]
     
+    var AreaLightRotations = [
+        0.0, 0.0, 0.0,
+        0.0, 0.0, -0.6
+    ]
+
     var AreaLightNormals = [
-        0.0, -1.0,  0.0   // light
+        0.0, -1.0,  0.0,
+        0.0, -1.0,  0.0
     ]
 
     var AreaLightTangents = [
-        0.0,  0.0, -1.0  // light
+        0.0,  0.0, -1.0,
+        0.0,  0.0, -1.0
     ]
 
     var AreaLightColours = [
-        2.0, 2.0, 2.0, 2.0  // light
+        2.0, 2.0, 2.0, 2.0, // light
+        2.0, 0.0, 0.0, 2.0  // light
     ]
 
     var AreaLightSizes = [
-        10.0, 3.0  // light
+        10.0, 3.0, // light
+        10.0, 2.0  // light
     ]
 
     var AreaLightMaterialIDs = [
@@ -447,6 +426,31 @@
     }
 
     function DoMovement() {
+
+        // ROTATE AREA LIGHTS
+        for (var i = 0; i < AreaLightRotations.length / 3; ++i)
+        {
+            var NewAreaLightNormal = new mat3().rotation(
+                new vec3(0.0, -1.0, 0.0),
+                AreaLightRotations[(i * 3) + 0],
+                AreaLightRotations[(i * 3) + 1],
+                AreaLightRotations[(i * 3) + 2])
+                .normalized()
+            var NewAreaLightTangent = new mat3().rotation(
+                new vec3(0.0, 0.0, -1.0),
+                AreaLightRotations[(i * 3) + 0],
+                AreaLightRotations[(i * 3) + 1],
+                AreaLightRotations[(i * 3) + 2])
+                .normalized()
+            AreaLightNormals[(i * 3) + 0] = NewAreaLightNormal.x
+            AreaLightNormals[(i * 3) + 1] = NewAreaLightNormal.y
+            AreaLightNormals[(i * 3) + 2] = NewAreaLightNormal.z
+            AreaLightTangents[(i * 3) + 0] = NewAreaLightTangent.x
+            AreaLightTangents[(i * 3) + 1] = NewAreaLightTangent.y
+            AreaLightTangents[(i * 3) + 2] = NewAreaLightTangent.z
+        }
+
+        // CAMERA
         CameraPosition = CameraPosition.add(CameraVelocity);
         CameraRotation = CameraRotation.add(CameraAngularVelocity);
 

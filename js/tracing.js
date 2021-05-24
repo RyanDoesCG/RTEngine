@@ -2,6 +2,12 @@ var tracingShaderCode = `
 
 #define PI 3.1415926538
 
+#define DIFFUSE_MATERIAL_ID 0
+#define SMOKE_VOLUME_MATERIAL_ID 1
+
+#define NUM_DIFFUSE_SAMPLES 1
+#define NUM_DIFFUSE_BOUNCES 2
+
 #define NUM_SPHERES 0
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
@@ -10,7 +16,7 @@ uniform float SphereSizes[NUM_SPHERES];
 uniform int   SphereMaterials[NUM_SPHERES];
 #endif
 
-#define NUM_AA_BOXES 12
+#define NUM_AA_BOXES 11
 #if NUM_AA_BOXES > 0
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
@@ -18,7 +24,7 @@ uniform vec3 AABoxSizes[NUM_AA_BOXES];
 uniform int  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
-#define NUM_AREA_LIGHTS 1
+#define NUM_AREA_LIGHTS 2
 #if NUM_AREA_LIGHTS > 0
 uniform vec3 AreaLightPositions[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightNormals[NUM_AREA_LIGHTS];
@@ -388,9 +394,40 @@ float Grid (vec2 uv)
               (fract(uv.y * 20.0) > 0.9)));
 }
 
-#define DIFFUSE_MATERIAL_ID 0
-#define NUM_DIFFUSE_SAMPLES 1
-#define NUM_DIFFUSE_BOUNCES 2
+float Shadow (HitPayload Hit)
+{
+    float ShadowSample = 1.0;
+
+    #if NUM_AREA_LIGHTS > 0
+    for (int i = 0; i < NUM_AREA_LIGHTS; ++i)
+    {
+        AreaLight light = AreaLight(
+            AreaLightColours[i],
+            AreaLightPositions[i],
+            AreaLightTangents[i],
+            AreaLightNormals[i],
+            AreaLightSizes[i],
+            AreaLightMaterials[i]
+        );
+    
+        Ray ShadowRay = Ray(
+            Hit.Position + Hit.Normal * 0.001, 
+            normalize(randomPointOnPlane(light) - Hit.Position));
+    
+        HitPayload ShadowHit = TraceRayMaterialMasked(
+            ShadowRay,
+            DIFFUSE_MATERIAL_ID);
+        if (ShadowHit.t < 100000.0 && ShadowHit.Colour.a < 2.0)
+        {
+            ShadowSample -= 0.75;
+        }
+    }
+
+    #endif
+    return saturate(ShadowSample);
+}
+
+
 vec3 ShadeDiffuse(HitPayload Hit)
 {
     vec3 diffuse = Hit.Colour.rgb;
@@ -405,65 +442,35 @@ vec3 ShadeDiffuse(HitPayload Hit)
                 Hit.Position + Hit.Normal * 0.001, 
                 normalize(Hit.Normal - (randomDirection())));
                 
-            Hit = TraceRay(BounceRay);
+            Hit = TraceRayMaterialMasked(BounceRay, DIFFUSE_MATERIAL_ID);
             s += Hit.Colour.rgb * Hit.Colour.a * (1.0 - (float(i) / float(NUM_DIFFUSE_BOUNCES)));
         }
 
         diffuse += s;
     }
 
-    return diffuse / float(NUM_DIFFUSE_SAMPLES);
+    return (diffuse / float(NUM_DIFFUSE_SAMPLES)) * Shadow(Hit);
 }
 
-#define SMOKE_VOLUME_MATERIAL_ID 1
 vec3 ShadeSmokeVolume(HitPayload Hit, Ray InitialRay)
 {
-    // UNFINISHED
-    
-    vec3 HitColour = Hit.Colour.rgb;
+    vec3 HitColour = Hit.Colour.rgb * texture(perlinNoiseSampler, Hit.UV).rgb;
 
-    Ray RefractionRay = Ray(
-        Hit.Position,
-        InitialRay.Direction
-    );
-
-    HitPayload RefractHit = TraceRayMaterialMasked(
-        RefractionRay,
-        DIFFUSE_MATERIAL_ID);
-
-    return mix (
-        HitColour, 
-        ShadeDiffuse(RefractHit), 
-        saturate(pow(length(Hit.Position - Hit.ObjectPosition), 0.01)));
-}
-
-float Shadow (HitPayload Hit)
-{
-    float ShadowSample = 1.0;
-
-    #if NUM_AREA_LIGHTS > 0
-    AreaLight light = AreaLight(
-        AreaLightColours[0],
-        AreaLightPositions[0],
-        AreaLightTangents[0],
-        AreaLightNormals[0],
-        AreaLightSizes[0],
-        AreaLightMaterials[0]
-    );
-
-    Ray ShadowRay = Ray(
-        Hit.Position + Hit.Normal * 0.001, 
-        normalize(randomPointOnPlane(light) - Hit.Position));
-
-    HitPayload ShadowHit = TraceRayMaterialMasked(
-        ShadowRay,
-        DIFFUSE_MATERIAL_ID);
-    if (ShadowHit.t < 100000.0 && ShadowHit.Colour.a < 2.0)
+    float scatter = random(0.0, 1.0);
+    if (scatter < 0.5)
     {
-        ShadowSample -= 0.75;
+        Ray ScatterRay = Ray(Hit.Position, randomDirection());
+        HitPayload ScatterHit = TraceRayMaterialMasked(
+            ScatterRay,
+            DIFFUSE_MATERIAL_ID);
+        return ShadeDiffuse(ScatterHit);
     }
-    #endif
-    return saturate(ShadowSample);
+
+    Ray PassThroughRay = Ray(Hit.Position, InitialRay.Direction);
+    HitPayload PassThroughHit = TraceRayMaterialMasked(
+        PassThroughRay,
+        DIFFUSE_MATERIAL_ID);
+    return ShadeDiffuse(PassThroughHit);
 }
 
 `;

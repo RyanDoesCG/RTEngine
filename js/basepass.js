@@ -50,7 +50,7 @@ var basePassFragmentShaderFooterSource = `
 
             if (Hit.MaterialID == DIFFUSE_MATERIAL_ID)
             {
-                Result = ShadeDiffuse(Hit) * Shadow(Hit);
+                Result = ShadeDiffuse(Hit);
             }
 
             if (Hit.MaterialID == SMOKE_VOLUME_MATERIAL_ID)
