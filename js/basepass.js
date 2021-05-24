@@ -30,9 +30,14 @@ var basePassFragmentShaderFooterSource = `
     #define NUM_DIFFUSE_SAMPLES 1
     #define NUM_DIFFUSE_BOUNCES 2
     #define NUM_SHADOW_RAYS 2
+
+    #define AA_OFFSET 0.005
+
     void main() 
     {
-        Ray PrimaryRay = GenerateRay(frag_uvs);
+        vec2 offset = vec2(random(-1.0, 1.0), random(-1.0, 1.0)) * AA_OFFSET;
+
+        Ray PrimaryRay = GenerateRay(frag_uvs + offset);
 
         vec3 Result = vec3(0.0, 0.0, 0.0);
         float ShadowSample = 0.0;
@@ -40,7 +45,7 @@ var basePassFragmentShaderFooterSource = `
         HitPayload Hit = TraceRay(PrimaryRay);
         if (Hit.t < 100000.0)
         {
-            vec3 diffuse = Hit.Colour.rgb;
+            vec3 diffuse = Hit.Colour.rgb * ((Hit.Colour.a >= 2.0) ? 1.0 : Grid(Hit.UV));
             for (int i = 0; i < NUM_DIFFUSE_SAMPLES; ++i)
             {
                 vec3 s = vec3(0.0, 0.0, 0.0);
