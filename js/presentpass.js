@@ -22,6 +22,5 @@ var presentPassFragmentShaderHeaderSource =
 var presentPassFragmentShaderFooterSource = `
     void main() 
     {
-
         out_color = texture(AlbedoBuffer, frag_uvs) / Time;
     }`

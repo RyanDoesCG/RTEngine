@@ -79,6 +79,9 @@
     gl.enableVertexAttribArray(1);
 
     // SCENE GEOMETRY
+    let DiffuseMaterial = 0;
+    let SmokeMaterial = 1;
+
     var SpherePositions = [ 
         -0.9, 1.1, 0.9,
         0.9, 1.1, 1.0
@@ -90,6 +93,10 @@
     var SphereSizes = [ 
         1.0,
         0.5
+    ]
+    var SphereMaterialIDs = [
+        DiffuseMaterial,
+        DiffuseMaterial
     ]
 
     var BoxPositions = [
@@ -103,7 +110,10 @@
         0.0, 3.9, 3.6,  // roof 3
         0.0, 3.9, -3.6,  // roof 4
         1.0, 2.0, 0.0,   // middle platform
-        -3.0, 2.0, 0.0   // step
+        -3.0, 2.0, 0.0,  // step
+
+        0.0, 2.6, 0.0 // volumetric
+
 
         /* Cornell
         0.0, 0.0, 0.0,
@@ -125,7 +135,9 @@
         0.5, 0.5, 0.5, 0.0, // roof 3
         0.5, 0.5, 0.5, 0.0, // roof 4
         0.5, 0.5, 0.5, 0.0, // middle platform 
-        0.5, 0.5, 0.5, 0.0 // step 1
+        0.5, 0.5, 0.5, 0.0, // step 1
+        
+        1.0, 0.01, 1.0, 0.5 // volumetric
 
         /* Cornell
         0.5, 0.5, 0.5, 0.0,
@@ -137,17 +149,19 @@
     ]
 
     var BoxSizes = [
-        4.0, 0.1, 4.0, // floor
-        0.1, 2.0, 4.0, // right wall
-        0.1, 2.0, 4.0, // left wall
-        4.0, 2.0, 0.1, // front wall
-        4.0, 2.0, 0.1, // back wall
-        1.5, 0.1, 4.0, // roof 1
-        1.5, 0.1, 4.0, // roof 2
+        4.0, 0.1, 4.0,  // floor
+        0.1, 2.0, 4.0,  // right wall
+        0.1, 2.0, 4.0,  // left wall
+        4.0, 2.0, 0.1,  // front wall
+        4.0, 2.0, 0.1,  // back wall
+        1.5, 0.1, 4.0,  // roof 1
+        1.5, 0.1, 4.0,  // roof 2
         1.5, 0.1, 0.25, // roof 3
         1.5, 0.1, 0.25, // roof 4
-        3.0, 0.1, 4.0, // middle platform
-        1.5, 0.1, 0.25 // step 1
+        3.0, 0.1, 4.0,  // middle platform
+        1.5, 0.1, 0.25, // step 1
+
+        0.5, 0.5, 0.5 // volumetric
 
         /* Cornell
         2.0, 0.1, 2.0,
@@ -156,6 +170,21 @@
         0.1, 2.1, 2.0,
         2.1, 2.1, 0.1
         */
+    ]
+
+    var BoxMaterialIDs = [
+        DiffuseMaterial, // floor
+        DiffuseMaterial, // right wall
+        DiffuseMaterial, // left wall
+        DiffuseMaterial, // front wall
+        DiffuseMaterial, // back wall
+        DiffuseMaterial, // roof 1
+        DiffuseMaterial, // roof 2
+        DiffuseMaterial, // roof 3
+        DiffuseMaterial, // roof 4
+        DiffuseMaterial, // middle platform
+        DiffuseMaterial, // step 1
+        DiffuseMaterial    // volumetric
     ]
 
     var AreaLightPositions = [
@@ -178,17 +207,28 @@
         10.0, 3.0  // light
     ]
 
+    var AreaLightMaterialIDs = [
+        DiffuseMaterial,
+        DiffuseMaterial
+    ]
+
     var basePassSpherePositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SpherePositions")
     var basePassSphereColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SphereColours")
     var basePassSphereSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SphereSizes")
+    var basePassSphereMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SphereMaterials")
+
     var basePassBoxPositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxPositions")
     var basePassBoxColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxColours")
     var basePassBoxSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxSizes")
-    var basePassAreaLightPositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AreaLightPositions")
-    var basePassAreaLightNormalUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightNormals")
-    var basePassAreaLightTangentUniformLoc = gl.getUniformLocation(basePassShaderProgram,  "AreaLightTangents")
-    var basePassAreaLightColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram,  "AreaLightColours")
-    var basePassAreaLightSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram,    "AreaLightSizes")
+    var basePassBoxMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxMaterials")
+
+    var basePassAreaLightPositionUniformLoc = gl.getUniformLocation(basePassShaderProgram,  "AreaLightPositions")
+    var basePassAreaLightNormalUniformLoc = gl.getUniformLocation(basePassShaderProgram,    "AreaLightNormals")
+    var basePassAreaLightTangentUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightTangents")
+    var basePassAreaLightColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightColours")
+    var basePassAreaLightSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram,     "AreaLightSizes")
+    var basePassAreaLightMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AreaLightMaterials")
+
     var basePassWidthUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Width")
     var basePassHeightUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Height")
     var basePassTimeUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Time")
@@ -199,14 +239,20 @@
     var presentPassSpherePositionUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "SpherePositions")
     var presentPassSphereColoursUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "SphereColours")
     var presentPassSphereSizesUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "SphereSizes")
+    var presentPassSphereMaterialsUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "SphereMaterials")
+
     var presentPassBoxPositionUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AABoxPositions")
     var presentPassBoxColoursUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AABoxColours")
     var presentPassBoxSizesUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AABoxSizes")
+    var presentPassBoxMaterialsUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AABoxMaterials")
+
     var presentPassAreaLightPositionUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AreaLightPositions")
     var presentPassAreaLightNormalUniformLoc = gl.getUniformLocation(presentPassShaderProgram,   "AreaLightNormals")
     var presentPassAreaLightTangentUniformLoc = gl.getUniformLocation(presentPassShaderProgram,  "AreaLightTangents")
     var presentPassAreaLightColoursUniformLoc = gl.getUniformLocation(presentPassShaderProgram,  "AreaLightColours")
     var presentPassAreaLightSizesUniformLoc = gl.getUniformLocation(presentPassShaderProgram,    "AreaLightSizes")
+    var presentPassAreaLightMaterialsUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AreaLightMaterials")
+
     var presentPassWidthUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "Width")
     var presentPassHeightUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "Height")
     var presentPassTimeUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "Time")
@@ -267,14 +313,20 @@
         gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(basePassSphereColoursUniformLoc, SphereColours)
         gl.uniform1fv(basePassSphereSizesUniformLoc, SphereSizes)
+        gl.uniform1iv(basePassSphereMaterialsUniformLoc, SphereMaterialIDs)
+
         gl.uniform3fv(basePassBoxPositionUniformLoc, BoxPositions)
         gl.uniform4fv(basePassBoxColoursUniformLoc, BoxColours)
         gl.uniform3fv(basePassBoxSizesUniformLoc, BoxSizes)
+        gl.uniform1iv(basePassBoxMaterialsUniformLoc, BoxMaterialIDs)
+
         gl.uniform3fv(basePassAreaLightPositionUniformLoc, AreaLightPositions)
         gl.uniform3fv(basePassAreaLightNormalUniformLoc,   AreaLightNormals)
         gl.uniform3fv(basePassAreaLightTangentUniformLoc,  AreaLightTangents)
         gl.uniform4fv(basePassAreaLightColoursUniformLoc,  AreaLightColours)
         gl.uniform2fv(basePassAreaLightSizesUniformLoc,    AreaLightSizes)
+        gl.uniform1iv(basePassAreaLightMaterialsUniformLoc, AreaLightMaterialIDs)
+
         gl.uniform1f (basePassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (basePassHeightUniformLoc, canvas.clientHeight)
         gl.uniform1f (basePassTimeUniformLoc, frameID)
@@ -319,14 +371,20 @@
         gl.uniform3fv(presentPassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(presentPassSphereColoursUniformLoc, SphereColours)
         gl.uniform1fv(presentPassSphereSizesUniformLoc, SphereSizes)
+        gl.uniform1iv(presentPassSphereMaterialsUniformLoc, SphereMaterialIDs)
+
         gl.uniform3fv(presentPassBoxPositionUniformLoc, BoxPositions)
         gl.uniform4fv(presentPassBoxColoursUniformLoc, BoxColours)
         gl.uniform3fv(presentPassBoxSizesUniformLoc, BoxSizes)
+        gl.uniform1iv(presentPassBoxMaterialsUniformLoc, BoxMaterialIDs)
+
         gl.uniform3fv(presentPassAreaLightPositionUniformLoc, AreaLightPositions)
         gl.uniform3fv(presentPassAreaLightNormalUniformLoc,   AreaLightNormals)
         gl.uniform3fv(presentPassAreaLightTangentUniformLoc,  AreaLightTangents)
         gl.uniform4fv(presentPassAreaLightColoursUniformLoc,  AreaLightColours)
         gl.uniform2fv(presentPassAreaLightSizesUniformLoc,    AreaLightSizes)
+        gl.uniform1iv(presentPassAreaLightMaterialsUniformLoc, AreaLightMaterialIDs)
+
         gl.uniform1f (presentPassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (presentPassHeightUniformLoc, canvas.clientHeight)
         gl.uniform1f (presentPassTimeUniformLoc, frameID);
@@ -349,7 +407,7 @@
         PollInput();
         DoMovement();
 
-        if (frameID < 1000)
+        if (frameID < 100000)
         {
             Render();
         }
