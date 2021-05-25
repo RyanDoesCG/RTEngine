@@ -91,6 +91,7 @@ struct HitPayload {
     vec3  Normal;
     vec2  UV;
     float t;
+    float t2;
     int   MaterialID;
     vec3  ObjectPosition;
 };
@@ -134,7 +135,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
     float b = 2.0 * dot (oc, ray.Direction);
     float c = dot (oc, oc) - sphere.Radius * sphere.Radius;
     float d = b * b - 4.0 * a * c;
-
+    
     if (d > 0.0)
     {
         float t = (-b - sqrt(d)) / (2.0 * a);
@@ -151,6 +152,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 HitNormal,
                 HitUV,
                 t,
+                (dot(ray.Direction, HitNormal)),
                 sphere.MaterialID, 
                 sphere.Position);
         }
@@ -198,6 +200,7 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
             HitNormal,
             HitUV,
             mint,
+            maxt,
             box.MaterialID,
             box.Position);
     }
@@ -228,6 +231,7 @@ HitPayload IntersectRayPlane (Ray ray, HitPayload last, AreaLight plane)
                     HitNormal,
                     HitUV,
                     t,
+                    t,
                     plane.MaterialID,
                     plane.Position);
             }
@@ -239,6 +243,7 @@ HitPayload IntersectRayPlane (Ray ray, HitPayload last, AreaLight plane)
 
 HitPayload IntersectRayMetaballs (Ray ray, HitPayload last)
 {
+
     return last;
 }
 
@@ -249,6 +254,7 @@ HitPayload TraceRay (Ray ray)
         vec3(-1.0, -1.0, -1.0),
         vec3(-1.0, -1.0, -1.0),
         vec2(0.0, 0.0),
+        1000000.0,
         1000000.0,
         0,
         vec3(0.0, 0.0, 0.0)
@@ -306,6 +312,7 @@ HitPayload TraceRayMaterialMasked (Ray ray, int MaterialID)
         vec3(-1.0, -1.0, -1.0),
         vec3(-1.0, -1.0, -1.0),
         vec2(0.0, 0.0),
+        1000000.0,
         1000000.0,
         0,
         vec3(0.0, 0.0, 0.0)
@@ -495,7 +502,7 @@ vec3 ShadeRefractive(HitPayload Hit, Ray InitialRay)
     vec3 Refract = vec3(0.0, 0.0, 0.0);
 
     Ray RefractRay = Ray(Hit.Position, InitialRay.Direction);
-    HitPayload RefractHit = TraceRay(RefractRay);
+    HitPayload RefractHit = TraceRayMaterialMasked(RefractRay, DIFFUSE_MATERIAL_ID);
 
     if (RefractHit.t < 100000.0)
     {
@@ -509,7 +516,8 @@ vec3 ShadeRefractive(HitPayload Hit, Ray InitialRay)
         Refract += vec3(1.0, 1.0, 1.0);
     }
 
-    return mix(Hit.Colour.rgb, Refract, Hit.Colour.a);
+    float t = Hit.Colour.a * (1.0 - abs(dot(InitialRay.Direction, Hit.Normal)));
+    return mix(Hit.Colour.rgb, Refract, saturate(t));
 }
 
 

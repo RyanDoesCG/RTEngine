@@ -84,14 +84,14 @@
     let RefractiveMaterial = 2;
 
     var SpherePositions = [ 
-         0.0, 2.6, 0.0,
+         0.0, 2.6, -0.4,
          0.5, 2.6, 0.0,
-         -0.5, 2.6, 0.0
+        -0.5, 2.6, 0.0
     ]
     var SphereColours = [ 
         1.0, 0.0, 0.0, 0.0,
         1.0, 1.0, 1.0, 0.8,
-        0.5, 1.0, 0.5, 0.5
+        0.5, 1.0, 0.5, 3.0
     ]
     var SphereSizes = [ 
         0.2,
@@ -106,17 +106,14 @@
 
     var MetaballPositions = [
         0.0, 2.6, 0.0,
-        1.0, 2.6, 0.0,
         1.0, 2.6, 0.0
     ]
     var MetaballColours = [
         1.0, 0.0, 0.0, 0.0,
-        0.1, 0.1, 0.1, 0.0,
-        1.0, 2.6, 0.0, 0.0
+        0.1, 0.1, 0.1, 0.0
     ]
     var MetaballSizes = [
         0.2, 
-        0.2,
         0.2
     ]
     var MetaballMaterialIDs = [
