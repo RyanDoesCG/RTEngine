@@ -100,6 +100,14 @@ float saturate (float x)
     return clamp(x, 0.0, 1.0); 
 }
 
+vec3 saturate (vec3 v) 
+{ 
+    return vec3(
+        clamp(v.x, 0.0, 1.0),
+        clamp(v.y, 0.0, 1.0),
+        clamp(v.z, 0.0, 1.0)); 
+}
+
 vec2 SphereUV (vec3 Normal)
 {
     float U = saturate(((atan(Normal.z, Normal.x) / PI) + 1.0) / 2.0);
@@ -414,9 +422,9 @@ float Grid (vec2 uv)
               (fract(uv.y * 20.0) > 0.9)));
 }
 
-float Shadow (HitPayload Hit)
+vec3 Shadow (HitPayload Hit)
 {
-    float ShadowSample = 1.0;
+    vec3 ShadowSample = vec3(1.0);
 
     if (Hit.Colour.a >= 2.0)
     {
@@ -439,12 +447,17 @@ float Shadow (HitPayload Hit)
             Hit.Position + Hit.Normal * 0.001, 
             normalize(randomPointOnPlane(light) - Hit.Position));
     
-        HitPayload ShadowHit = TraceRayMaterialMasked(
-            ShadowRay,
-            DIFFUSE_MATERIAL_ID);
+        HitPayload ShadowHit = TraceRay(ShadowRay);
         if (ShadowHit.t < 100000.0 && ShadowHit.Colour.a < 2.0)
         {
-            ShadowSample -= 0.75;
+            if (ShadowHit.MaterialID == DIFFUSE_MATERIAL_ID)
+            {
+                ShadowSample -= 0.75;
+            }
+            if (ShadowHit.MaterialID == REFRACTIVE_MATERIAL_ID)
+            {
+                ShadowSample += ShadowHit.Colour.rgb;
+            }
         }
     }
 
@@ -469,7 +482,7 @@ vec3 ShadeDiffuse(HitPayload Hit)
             Ray BounceRay = Ray(
                 Hit.Position + Hit.Normal * 0.001, 
                 normalize(Hit.Normal - (randomDirection())));
-            Hit = TraceRayMaterialMasked(BounceRay, DIFFUSE_MATERIAL_ID);
+            Hit = TraceRay(BounceRay);
             s += Hit.Colour.rgb * Hit.Colour.a * (1.0 - (float(i) / float(NUM_DIFFUSE_BOUNCES)));
         }
         diffuse += s;
