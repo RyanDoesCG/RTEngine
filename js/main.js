@@ -79,21 +79,50 @@
     gl.enableVertexAttribArray(1);
 
     // SCENE GEOMETRY
-    let DiffuseMaterial = 0;
-    let SmokeMaterial = 1;
+    let DiffuseMaterial    = 0;
+    let ReflectiveMaterial = 1;
+    let RefractiveMaterial = 2;
 
     var SpherePositions = [ 
-        0.0, 0.6, 0.0
+         0.0, 2.6, 0.0,
+         1.0, 2.6, 0.0,
+         -1.0, 2.6, 0.0
     ]
     var SphereColours = [ 
-        1.0, 0.0, 0.0, 0.0
+        1.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 0.8,
+        0.5, 1.0, 0.5, 0.5
     ]
     var SphereSizes = [ 
-        0.5
+        0.2,
+        0.2,
+        0.2
     ]
     var SphereMaterialIDs = [
         DiffuseMaterial,
-        DiffuseMaterial
+        ReflectiveMaterial,
+        RefractiveMaterial
+    ]
+
+    var MetaballPositions = [
+        0.0, 2.6, 0.0,
+        1.0, 2.6, 0.0,
+        1.0, 2.6, 0.0
+    ]
+    var MetaballColours = [
+        1.0, 0.0, 0.0, 0.0,
+        0.1, 0.1, 0.1, 0.0,
+        1.0, 2.6, 0.0, 0.0
+    ]
+    var MetaballSizes = [
+        0.2, 
+        0.2,
+        0.2
+    ]
+    var MetaballMaterialIDs = [
+        DiffuseMaterial,
+        DiffuseMaterial,
+
     ]
 
     var BoxPositions = [
@@ -109,7 +138,6 @@
         1.0, 2.0, 0.0,   // middle platform
         -3.0, 2.0, 0.0   // step
     ]
-
     var BoxColours = [
         0.5, 0.5, 0.5, 0.0, // floor
         0.5, 0.5, 0.5, 0.0, // right wall
@@ -122,9 +150,7 @@
         0.5, 0.5, 0.5, 0.0, // roof 4
         0.5, 0.5, 0.5, 0.0, // middle platform 
         0.5, 0.5, 0.5, 0.0 // step 1
-
     ]
-
     var BoxSizes = [
         4.0, 0.1, 4.0, // floor
         0.1, 2.0, 4.0, // right wall
@@ -138,7 +164,6 @@
         3.0, 0.1, 4.0, // middle platform
         1.5, 0.1, 0.25 // step 1
     ]
-
     var BoxMaterialIDs = [
         DiffuseMaterial, // floor
         DiffuseMaterial, // right wall
@@ -157,35 +182,29 @@
     ]
 
     var AreaLightPositions = [
-        0.0, 4.2, 0.0,
+        0.0, 6.2, 0.0,
         0.0, 1.0, 0.0
     ]
-    
     var AreaLightRotations = [
         0.0, 0.0, 0.0,
         0.0, 0.0, -0.6
     ]
-
     var AreaLightNormals = [
         0.0, -1.0,  0.0,
         0.0, -1.0,  0.0
     ]
-
     var AreaLightTangents = [
         0.0,  0.0, -1.0,
         0.0,  0.0, -1.0
     ]
-
     var AreaLightColours = [
-        2.0, 2.0, 2.0, 2.0, // light
-        2.0, 0.0, 0.0, 2.0  // light
+        1.0, 1.0, 1.0, 2.0, // light
+        0.3, 0.0, 0.0, 2.0  // light
     ]
-
     var AreaLightSizes = [
-        10.0, 3.0, // light
+        8.0, 3.0, // light
         10.0, 2.0  // light
     ]
-
     var AreaLightMaterialIDs = [
         DiffuseMaterial,
         DiffuseMaterial
@@ -207,6 +226,11 @@
     var basePassAreaLightColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightColours")
     var basePassAreaLightSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram,     "AreaLightSizes")
     var basePassAreaLightMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AreaLightMaterials")
+
+    var basePassMetaballPositionUniformLoc = gl.getUniformLocation(basePassShaderProgram,  "MetaballPositions")
+    var basePassMetaballColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "MetaballColours")
+    var basePassMetaballSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram,     "MetaballSizes")
+    var basePassMetaballMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "MetaballMaterials")
 
     var basePassWidthUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Width")
     var basePassHeightUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Height")
@@ -231,6 +255,11 @@
     var presentPassAreaLightColoursUniformLoc = gl.getUniformLocation(presentPassShaderProgram,  "AreaLightColours")
     var presentPassAreaLightSizesUniformLoc = gl.getUniformLocation(presentPassShaderProgram,    "AreaLightSizes")
     var presentPassAreaLightMaterialsUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "AreaLightMaterials")
+
+    var presentPassMetaballPositionUniformLoc = gl.getUniformLocation(presentPassShaderProgram,  "MetaballPositions")
+    var presentPassMetaballColoursUniformLoc = gl.getUniformLocation(presentPassShaderProgram,   "MetaballColours")
+    var presentPassMetaballSizesUniformLoc = gl.getUniformLocation(presentPassShaderProgram,     "MetaballSizes")
+    var presentPassMetaballMaterialsUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "MetaballMaterials")
 
     var presentPassWidthUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "Width")
     var presentPassHeightUniformLoc = gl.getUniformLocation(presentPassShaderProgram, "Height")
@@ -306,6 +335,12 @@
         gl.uniform2fv(basePassAreaLightSizesUniformLoc,    AreaLightSizes)
         gl.uniform1iv(basePassAreaLightMaterialsUniformLoc, AreaLightMaterialIDs)
 
+
+        gl.uniform3fv(basePassMetaballPositionUniformLoc,  MetaballPositions)
+        gl.uniform4fv(basePassMetaballColoursUniformLoc,   MetaballColours)
+        gl.uniform1fv(basePassMetaballSizesUniformLoc,     MetaballSizes)
+        gl.uniform1iv(basePassMetaballMaterialsUniformLoc, MetaballMaterialIDs)
+
         gl.uniform1f (basePassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (basePassHeightUniformLoc, canvas.clientHeight)
         gl.uniform1f (basePassTimeUniformLoc, frameID)
@@ -363,6 +398,11 @@
         gl.uniform4fv(presentPassAreaLightColoursUniformLoc,  AreaLightColours)
         gl.uniform2fv(presentPassAreaLightSizesUniformLoc,    AreaLightSizes)
         gl.uniform1iv(presentPassAreaLightMaterialsUniformLoc, AreaLightMaterialIDs)
+
+        gl.uniform3fv(presentPassMetaballPositionUniformLoc,  MetaballPositions)
+        gl.uniform4fv(presentPassMetaballColoursUniformLoc,   MetaballColours)
+        gl.uniform1fv(presentPassMetaballSizesUniformLoc,     MetaballSizes)
+        gl.uniform1iv(presentPassMetaballMaterialsUniformLoc, MetaballMaterialIDs)
 
         gl.uniform1f (presentPassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (presentPassHeightUniformLoc, canvas.clientHeight)

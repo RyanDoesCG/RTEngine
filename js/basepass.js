@@ -53,9 +53,14 @@ var basePassFragmentShaderFooterSource = `
                 Result = ShadeDiffuse(Hit);
             }
 
-            if (Hit.MaterialID == SMOKE_VOLUME_MATERIAL_ID)
+            if (Hit.MaterialID == REFLECTIVE_MATERIAL_ID)
             {
-                Result = ShadeSmokeVolume(Hit, PrimaryRay);
+                Result = ShadeReflective(Hit, PrimaryRay);
+            }
+
+            if (Hit.MaterialID == REFRACTIVE_MATERIAL_ID)
+            {
+                Result = ShadeRefractive(Hit, PrimaryRay);
             }
         }
         

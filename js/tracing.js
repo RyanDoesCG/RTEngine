@@ -2,13 +2,16 @@ var tracingShaderCode = `
 
 #define PI 3.1415926538
 
-#define DIFFUSE_MATERIAL_ID 0
-#define SMOKE_VOLUME_MATERIAL_ID 1
+#define DIFFUSE_MATERIAL_ID    0
+#define REFLECTIVE_MATERIAL_ID 1
+#define REFRACTIVE_MATERIAL_ID 2
 
 #define NUM_DIFFUSE_SAMPLES 1
 #define NUM_DIFFUSE_BOUNCES 2
 
-#define NUM_SPHERES 0
+#define NUM_SPECULAR_BOUNCES 2
+
+#define NUM_SPHERES 3
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -24,7 +27,7 @@ uniform vec3 AABoxSizes[NUM_AA_BOXES];
 uniform int  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
-#define NUM_AREA_LIGHTS 2
+#define NUM_AREA_LIGHTS 1
 #if NUM_AREA_LIGHTS > 0
 uniform vec3 AreaLightPositions[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightNormals[NUM_AREA_LIGHTS];
@@ -32,6 +35,14 @@ uniform vec3 AreaLightTangents[NUM_AREA_LIGHTS];
 uniform vec4 AreaLightColours[NUM_AREA_LIGHTS];
 uniform vec2 AreaLightSizes[NUM_AREA_LIGHTS];
 uniform int  AreaLightMaterials[NUM_AREA_LIGHTS];
+#endif
+
+#define NUM_METABALLS 0
+#if NUM_METABALLS > 0
+uniform vec3  MetaballPositions[NUM_METABALLS];
+uniform vec4  MetaballColours[NUM_METABALLS];
+uniform float MetaballSizes[NUM_METABALLS];
+uniform int   MetaballMaterials[NUM_METABALLS];
 #endif
 
 uniform sampler2D perlinNoiseSampler;
@@ -218,6 +229,11 @@ HitPayload IntersectRayPlane (Ray ray, HitPayload last, AreaLight plane)
     return last;
 }
 
+HitPayload IntersectRayMetaballs (Ray ray, HitPayload last)
+{
+    return last;
+}
+
 HitPayload TraceRay (Ray ray)
 {
     HitPayload Hit = HitPayload(
@@ -266,6 +282,10 @@ HitPayload TraceRay (Ray ray)
             AreaLightMaterials[i]
         ));
     }
+    #endif
+
+    #if NUM_METABALLS > 0
+    Hit = IntersectRayMetaballs(ray, Hit);
     #endif
 
     return Hit;
@@ -398,6 +418,11 @@ float Shadow (HitPayload Hit)
 {
     float ShadowSample = 1.0;
 
+    if (Hit.Colour.a >= 2.0)
+    {
+        return ShadowSample;
+    }
+
     #if NUM_AREA_LIGHTS > 0
     for (int i = 0; i < NUM_AREA_LIGHTS; ++i)
     {
@@ -431,26 +456,118 @@ float Shadow (HitPayload Hit)
 vec3 ShadeDiffuse(HitPayload Hit)
 {
     vec3 diffuse = Hit.Colour.rgb;
+    if (Hit.Colour.a >= 2.0)
+    {
+        return diffuse;
+    }
 
     for (int i = 0; i < NUM_DIFFUSE_SAMPLES; ++i)
     {
         vec3 s = vec3(0.0, 0.0, 0.0);
-
         for (int i = 0; i < NUM_DIFFUSE_BOUNCES; ++i)
         {
             Ray BounceRay = Ray(
                 Hit.Position + Hit.Normal * 0.001, 
                 normalize(Hit.Normal - (randomDirection())));
-                
             Hit = TraceRayMaterialMasked(BounceRay, DIFFUSE_MATERIAL_ID);
             s += Hit.Colour.rgb * Hit.Colour.a * (1.0 - (float(i) / float(NUM_DIFFUSE_BOUNCES)));
         }
-
         diffuse += s;
     }
-
     return (diffuse / float(NUM_DIFFUSE_SAMPLES)) * Shadow(Hit);
 }
+
+vec3 ShadeRefractive(HitPayload Hit, Ray InitialRay)
+{
+    vec3 Refract = vec3(0.0, 0.0, 0.0);
+
+    Ray RefractRay = Ray(Hit.Position, InitialRay.Direction);
+    HitPayload RefractHit = TraceRay(RefractRay);
+
+    if (RefractHit.t < 100000.0)
+    {
+        if (RefractHit.MaterialID == DIFFUSE_MATERIAL_ID)
+        {
+            Refract += ShadeDiffuse(RefractHit);
+        }
+    }
+    else
+    {
+        Refract += vec3(1.0, 1.0, 1.0);
+    }
+
+    return mix(Hit.Colour.rgb, Refract, Hit.Colour.a);
+}
+
+
+vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
+{
+    vec3 Specular = vec3(0.0, 0.0, 0.0);
+
+    Ray BounceRay = Ray(Hit.Position, reflect(InitialRay.Direction, Hit.Normal));
+    HitPayload BounceHit = TraceRay(BounceRay);
+    
+    if (BounceHit.t < 100000.0)
+    {
+        if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
+        {
+            Specular += ShadeDiffuse(BounceHit);
+        }
+        if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
+        {
+            Specular += ShadeRefractive(BounceHit, BounceRay);
+        }
+        if (BounceHit.MaterialID == REFLECTIVE_MATERIAL_ID)
+        {
+            BounceRay = Ray(BounceHit.Position, reflect(BounceRay.Direction, BounceHit.Normal));
+            BounceHit = TraceRay(BounceRay);
+
+            if (BounceHit.t < 100000.0)
+            {
+                if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
+                {
+                    Specular += ShadeDiffuse(BounceHit);
+                }
+                if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
+                {
+                    Specular += ShadeRefractive(BounceHit, BounceRay);
+                }
+                if (BounceHit.MaterialID == REFLECTIVE_MATERIAL_ID)
+                {
+                    BounceRay = Ray(BounceHit.Position, reflect(BounceRay.Direction, BounceHit.Normal));
+                    BounceHit = TraceRay(BounceRay);
+
+                    if (BounceHit.t < 100000.0)
+                    {
+                        if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
+                        {
+                            Specular += ShadeDiffuse(BounceHit);
+                        }
+                        if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
+                        {
+                            Specular += ShadeRefractive(BounceHit, BounceRay);
+                        }
+                    }
+                    else
+                    {
+                        Specular += vec3(1.0);
+                    }
+                }
+            }
+            else
+            {
+                Specular += vec3(1.0);
+            }
+        }
+    }
+    else
+    {
+        Specular += vec3(1.0);
+    }
+
+    return mix(Hit.Colour.rgb, Specular, Hit.Colour.a);
+}
+
 
 vec3 ShadeSmokeVolume(HitPayload Hit, Ray InitialRay)
 {
