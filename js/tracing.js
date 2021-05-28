@@ -109,6 +109,57 @@ vec3 saturate (vec3 v)
         clamp(v.z, 0.0, 1.0)); 
 }
 
+
+float seed = 0.0;
+float random ()
+{
+    seed += 0.1;
+    return texture(blueNoiseSampler, vec2(sin(Time * 0.2), cos(Time * 0.2)) + (frag_uvs * 2.0) + vec2(seed)).x;
+}
+
+float random (vec2 UV)
+{
+    return texture(blueNoiseSampler, UV).x;
+}
+
+float random (float min, float max)
+{
+    return min + random() * (max - min);
+}
+
+vec3 randomDirection()
+{
+    // generate random UV
+    float x = random(-1.0, 1.0);
+    float y = random(-1.0, 1.0);
+    float z = random(-1.0, 1.0);
+
+    return normalize(vec3(x, y, z));
+}
+
+vec3 randomPointOnPlane(AreaLight plane)
+{
+    vec3 PlaneU = plane.Tangent;
+    vec3 PlaneV = cross(plane.Normal, plane.Tangent);
+    vec3 BottomLeftCorner  = plane.Position + (-PlaneU * plane.Size.x * 0.5) + (-PlaneV * plane.Size.y * 0.5);
+    vec3 BottomRightCorner = plane.Position + ( PlaneU * plane.Size.x * 0.5) + (-PlaneV * plane.Size.y * 0.5);
+    vec3 TopLeftCorner     = plane.Position + (-PlaneU * plane.Size.x * 0.5) + ( PlaneV * plane.Size.y * 0.5);
+
+    float u = random(0.0, 1.0) * plane.Size.x;
+    float v = random(0.0, 1.0) * plane.Size.y;
+
+    return BottomLeftCorner + (PlaneU * u) + (PlaneV * v);
+}
+
+float Grid (vec2 uv)
+{
+    return mix(
+        0.0, 
+        1.0, 
+        float((fract(uv.x * 20.0) > 0.9) || 
+              (fract(uv.y * 20.0) > 0.9)));
+}
+
 vec2 SphereUV (vec3 Normal)
 {
     float U = saturate(((atan(Normal.z, Normal.x) / PI) + 1.0) / 2.0);
@@ -138,7 +189,8 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
     
     if (d > 0.0)
     {
-        float t = (-b - sqrt(d)) / (2.0 * a);
+        float t  = (-b - sqrt(d)) / (2.0 * a);
+        float t1 = (-b + sqrt(d)) / (2.0 * a);
 
         if (t > 0.0 && t < last.t)
         {
@@ -152,7 +204,27 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 HitNormal,
                 HitUV,
                 t,
-                (dot(ray.Direction, HitNormal)),
+                t1,
+                sphere.MaterialID, 
+                sphere.Position);
+        }
+
+        if (t1 > 0.0 && t1 < last.t)
+        {
+            vec3 HitPosition = (ray.Origin + ray.Direction * t1);
+            vec3 HitNormal   = normalize(HitPosition - sphere.Position);
+            vec2 HitUV       = SphereUV(HitNormal);
+
+            float noise = texture(perlinNoiseSampler, HitUV ).r;
+            vec4 white = vec4(1.0);
+            vec4 blue = vec4(0.53,0.81,0.92, 1.0);
+            return HitPayload(
+                mix(blue, white, noise),
+                HitPosition,
+                HitNormal,
+                HitUV,
+                t1,
+                t,
                 sphere.MaterialID, 
                 sphere.Position);
         }
@@ -189,10 +261,29 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
             (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.000001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.000001)), 
             (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.000001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.000001)));
 
+        vec3 HitTangent = vec3(
+            (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.000001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.000001)),
+            (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.000001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.000001)), 
+            (float(abs(HitPositionLocalSpace.x - box.Size.x) < 0.000001)) - (float(abs(HitPositionLocalSpace.x - -box.Size.x) < 0.000001)));
+
+        vec3 HitBitangent = cross(HitTangent, HitNormal);
+
         vec2 HitUV = vec2(
             abs(HitPositionLocalSpace.x * abs(HitNormal.z + HitNormal.y) + HitPositionLocalSpace.z * abs(HitNormal.x)),
             abs(HitPositionLocalSpace.y + HitPositionLocalSpace.z * abs(HitNormal.y))
         );
+
+        float Offset = 0.1;
+        float HeightHere  = texture(perlinNoiseSampler, HitUV).r;
+        float HeightUp    = texture(perlinNoiseSampler, HitUV + vec2(0.0, Offset)).r;
+        float HeightDown  = texture(perlinNoiseSampler, HitUV + vec2(0.0, -Offset)).r;
+        float HeightLeft  = texture(perlinNoiseSampler, HitUV + vec2(-Offset, 0.0)).r;
+        float HeightRight = texture(perlinNoiseSampler, HitUV + vec2(Offset, 0.0)).r;
+
+        vec2 s = vec2(1.0, 0.0);
+        vec3 a = normalize(vec3(s.xy, HeightRight - HeightUp));
+        vec3 b = normalize(vec3(s.yx, HeightUp - HeightDown));
+        vec3 n = cross(a, b).xyz;
 
         return HitPayload(
             box.Colour,
@@ -379,56 +470,6 @@ Ray GenerateRay (vec2 UV)
     return Ray(CameraPosition, CameraToViewPlane);
 }
 
-float seed = 0.0;
-float random ()
-{
-    seed += 0.1;
-    return texture(blueNoiseSampler, vec2(sin(Time * 0.2), cos(Time * 0.2)) + (frag_uvs * 2.0) + vec2(seed)).x;
-}
-
-float random (vec2 UV)
-{
-    return texture(blueNoiseSampler, UV).x;
-}
-
-float random (float min, float max)
-{
-    return min + random() * (max - min);
-}
-
-vec3 randomDirection()
-{
-    // generate random UV
-    float x = random(-1.0, 1.0);
-    float y = random(-1.0, 1.0);
-    float z = random(-1.0, 1.0);
-
-    return normalize(vec3(x, y, z));
-}
-
-vec3 randomPointOnPlane(AreaLight plane)
-{
-    vec3 PlaneU = plane.Tangent;
-    vec3 PlaneV = cross(plane.Normal, plane.Tangent);
-    vec3 BottomLeftCorner  = plane.Position + (-PlaneU * plane.Size.x * 0.5) + (-PlaneV * plane.Size.y * 0.5);
-    vec3 BottomRightCorner = plane.Position + ( PlaneU * plane.Size.x * 0.5) + (-PlaneV * plane.Size.y * 0.5);
-    vec3 TopLeftCorner     = plane.Position + (-PlaneU * plane.Size.x * 0.5) + ( PlaneV * plane.Size.y * 0.5);
-
-    float u = random(0.0, 1.0) * plane.Size.x;
-    float v = random(0.0, 1.0) * plane.Size.y;
-
-    return BottomLeftCorner + (PlaneU * u) + (PlaneV * v);
-}
-
-float Grid (vec2 uv)
-{
-    return mix(
-        0.0, 
-        1.0, 
-        float((fract(uv.x * 20.0) > 0.9) || 
-              (fract(uv.y * 20.0) > 0.9)));
-}
-
 vec3 Shadow (HitPayload Hit)
 {
     vec3 ShadowSample = vec3(1.0);
@@ -609,6 +650,18 @@ vec3 ShadeSmokeVolume(HitPayload Hit, Ray InitialRay)
         PassThroughRay,
         DIFFUSE_MATERIAL_ID);
     return ShadeDiffuse(PassThroughHit);
+}
+
+vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
+{
+    float Lighting = 0.2;
+    for (int i = 0; i < NUM_AREA_LIGHTS; ++i)
+    {
+        vec3 LightPosition = AreaLightPositions[i];
+        vec3 DirectionToLight = normalize(LightPosition - Hit.Position);
+        Lighting += max(dot (DirectionToLight, Hit.Normal), 0.0);
+    }
+    return Hit.Colour.rgb * Lighting;
 }
 
 `;

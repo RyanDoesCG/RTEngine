@@ -32,6 +32,11 @@ var basePassFragmentShaderFooterSource = `
     {
         vec2 offset = vec2(random(-1.0, 1.0), random(-1.0, 1.0)) * AA_OFFSET;
 
+        if (Time == 1.0)
+        {
+            offset = vec2(0.0, 0.0);
+        }
+
         Ray PrimaryRay = GenerateRay(frag_uvs + offset);
 
         vec3 Result = vec3(1.0, 1.0, 1.0);
@@ -42,7 +47,8 @@ var basePassFragmentShaderFooterSource = `
         {
             if (Time == 1.0)
             {
-                out_color = vec4(Hit.Colour.rgb , 1.0);
+                Result = ShadeLambertian(Hit, PrimaryRay);
+                out_color = vec4(Result.rgb , 1.0);
                 out_normal = vec4(1.0);
                 out_uv = vec4(1.0);
                 return;
