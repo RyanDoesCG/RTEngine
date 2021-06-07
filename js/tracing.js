@@ -11,7 +11,7 @@ var tracingShaderCode = `
 
 #define NUM_SPECULAR_BOUNCES 2
 
-#define NUM_SPHERES 3
+#define NUM_SPHERES 6
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -19,7 +19,7 @@ uniform float SphereSizes[NUM_SPHERES];
 uniform int   SphereMaterials[NUM_SPHERES];
 #endif
 
-#define NUM_AA_BOXES 11
+#define NUM_AA_BOXES 5
 #if NUM_AA_BOXES > 0
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
@@ -151,13 +151,13 @@ vec3 randomPointOnPlane(AreaLight plane)
     return BottomLeftCorner + (PlaneU * u) + (PlaneV * v);
 }
 
-float Grid (vec2 uv)
+float Grid (vec2 uv, float Thickness)
 {
     return mix(
         0.0, 
         1.0, 
-        float((fract(uv.x * 20.0) > 0.9) || 
-              (fract(uv.y * 20.0) > 0.9)));
+        float((fract(uv.x * 20.0) > Thickness) || 
+              (fract(uv.y * 20.0) > Thickness)));
 }
 
 vec2 SphereUV (vec3 Normal)
@@ -189,6 +189,8 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
     
     if (d > 0.0)
     {
+        vec2 AlphaMaskUV = vec2(0.0, 0.3425);
+
         float t  = (-b - sqrt(d)) / (2.0 * a);
         float t1 = (-b + sqrt(d)) / (2.0 * a);
 
@@ -198,15 +200,20 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            return HitPayload(
-                sphere.Colour,
-                HitPosition,
-                HitNormal,
-                HitUV,
-                t,
-                t1,
-                sphere.MaterialID, 
-                sphere.Position);
+            float a = Grid(HitUV * AlphaMaskUV, 0.4);
+
+            if (a == 1.0)
+            {
+                return HitPayload(
+                    sphere.Colour,
+                    HitPosition,
+                    HitNormal,
+                    HitUV,
+                    t,
+                    t1,
+                    sphere.MaterialID, 
+                    sphere.Position);
+            }
         }
 
         if (t1 > 0.0 && t1 < last.t)
@@ -215,18 +222,20 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float noise = texture(perlinNoiseSampler, HitUV ).r;
-            vec4 white = vec4(1.0);
-            vec4 blue = vec4(0.53,0.81,0.92, 1.0);
-            return HitPayload(
-                mix(blue, white, noise),
-                HitPosition,
-                HitNormal,
-                HitUV,
-                t1,
-                t,
-                sphere.MaterialID, 
-                sphere.Position);
+            float a = Grid(HitUV * AlphaMaskUV, 0.4);
+
+            if (a == 1.0)
+            {
+                return HitPayload(
+                    sphere.Colour,
+                    HitPosition,
+                    HitNormal,
+                    HitUV,
+                    t1,
+                    t,
+                    sphere.MaterialID, 
+                    sphere.Position);
+            }
         }
     }
 

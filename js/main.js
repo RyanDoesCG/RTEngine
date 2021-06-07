@@ -84,24 +84,20 @@
     let RefractiveMaterial = 2;
 
     var SpherePositions = [ 
-         0.0, 2.6, -0.4,
-         0.5, 2.6, 0.0,
-        -0.5, 2.6, 0.0
+         0.0, 2.5545, 0.0,
+         0.0, 2.5545, 0.0
     ]
     var SphereColours = [ 
         1.0, 0.0, 0.0, 0.0,
-        1.0, 1.0, 1.0, 0.8,
-        0.5, 1.0, 0.5, 3.0
+        1.0, 1.0, 1.0, 4.0
     ]
     var SphereSizes = [ 
-        0.2,
-        0.2,
-        0.2
+        2.3545,
+        0.4
     ]
     var SphereMaterialIDs = [
         DiffuseMaterial,
-        ReflectiveMaterial,
-        RefractiveMaterial
+        DiffuseMaterial
     ]
 
     var MetaballPositions = [
@@ -123,63 +119,40 @@
     ]
 
     var BoxPositions = [
-        0.0, 0.0, 0.0,  // floor 
-        4.0, 2.0, 0.0,  // right wall
-        -4.0, 2.0, 0.0, // left wall
-        0.0, 2.0, 4.0,  // front wall
-        0.0, 2.0, -4.0, // back wall
-        2.5, 3.9, 0.0,  // roof 1
-        -2.5, 3.9, 0.0,  // roof 2
-        0.0, 3.9, 3.6,  // roof 3
-        0.0, 3.9, -3.6,  // roof 4
-        1.0, 2.0, 0.0,   // middle platform
-        -3.0, 2.0, 0.0   // step
+        0.0, 7.8, 0.0,  // floor
+        -4.0, 3.9, 0.0,  // floor
+        0.0, 3.9, 4.0,  // floor
+        0.0, 0.0, 0.0,  // floor
+        4.0, 3.9, 0.0,  // floor
+        0.0, 1.5, 0.0,  // floor
     ]
     var BoxColours = [
         0.5, 0.5, 0.5, 0.0, // floor
-        0.5, 0.5, 0.5, 0.0, // right wall
-        0.5, 0.5, 0.5, 0.0, // left wall
-        0.5, 0.5, 0.5, 0.0, // front wall
-        0.5, 0.5, 0.5, 0.0, // back wall
-        0.5, 0.5, 0.5, 0.0, // roof 1
-        0.5, 0.5, 0.5, 0.0, // roof 2
-        0.5, 0.5, 0.5, 0.0, // roof 3
-        0.5, 0.5, 0.5, 0.0, // roof 4
-        0.5, 0.5, 0.5, 0.0, // middle platform 
-        0.5, 0.5, 0.5, 0.0 // step 1
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
     ]
     var BoxSizes = [
         4.0, 0.1, 4.0, // floor
-        0.1, 2.0, 4.0, // right wall
-        0.1, 2.0, 4.0, // left wall
-        4.0, 2.0, 0.1, // front wall
-        4.0, 2.0, 0.1, // back wall
-        1.5, 0.1, 4.0, // roof 1
-        1.5, 0.1, 4.0, // roof 2
-        1.5, 0.1, 0.25, // roof 3
-        1.5, 0.1, 0.25, // roof 4
-        3.0, 0.1, 4.0, // middle platform
-        1.5, 0.1, 0.25 // step 1
+        0.1, 4.0, 4.0, // floor
+        4.0, 4.0, 0.1, // floor
+        4.0, 0.1, 4.0, // floor
+        0.1, 4.0, 4.0, // floor
+        1.0, 1.5, 1.0,  // floor
     ]
     var BoxMaterialIDs = [
-        DiffuseMaterial, // floor
-        DiffuseMaterial, // right wall
-        DiffuseMaterial, // left wall
-        DiffuseMaterial, // front wall
-        DiffuseMaterial, // back wall
-        DiffuseMaterial, // roof 1
-        DiffuseMaterial, // roof 2
-        DiffuseMaterial, // roof 3
-        DiffuseMaterial, // roof 4
-        DiffuseMaterial, // middle platform
-        DiffuseMaterial, // step 1
-        DiffuseMaterial,    // volumetric
+        DiffuseMaterial,
+        DiffuseMaterial,
+        DiffuseMaterial,
+        DiffuseMaterial,
         DiffuseMaterial,
         DiffuseMaterial
     ]
 
     var AreaLightPositions = [
-        0.0, 6.2, 0.0,
+        0.0, 7.7, 0.0,
         0.0, 1.0, 0.0
     ]
     var AreaLightRotations = [
@@ -199,7 +172,7 @@
         0.3, 0.0, 0.0, 2.0  // light
     ]
     var AreaLightSizes = [
-        8.0, 3.0, // light
+        4.0, 4.0, // light
         10.0, 2.0  // light
     ]
     var AreaLightMaterialIDs = [
