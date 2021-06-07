@@ -2,10 +2,6 @@ var tracingShaderCode = `
 
 #define PI 3.1415926538
 
-#define DIFFUSE_MATERIAL_ID    0
-#define REFLECTIVE_MATERIAL_ID 1
-#define REFRACTIVE_MATERIAL_ID 2
-
 #define NUM_DIFFUSE_SAMPLES 1
 #define NUM_DIFFUSE_BOUNCES 2
 
@@ -16,7 +12,7 @@ var tracingShaderCode = `
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
 uniform float SphereSizes[NUM_SPHERES];
-uniform int   SphereMaterials[NUM_SPHERES];
+uniform vec3   SphereMaterials[NUM_SPHERES];
 #endif
 
 #define NUM_AA_BOXES 5
@@ -24,7 +20,7 @@ uniform int   SphereMaterials[NUM_SPHERES];
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
 uniform vec3 AABoxSizes[NUM_AA_BOXES];
-uniform int  AABoxMaterials[NUM_AA_BOXES];
+uniform vec3  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
 #define NUM_AREA_LIGHTS 1
@@ -34,15 +30,7 @@ uniform vec3 AreaLightNormals[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightTangents[NUM_AREA_LIGHTS];
 uniform vec4 AreaLightColours[NUM_AREA_LIGHTS];
 uniform vec2 AreaLightSizes[NUM_AREA_LIGHTS];
-uniform int  AreaLightMaterials[NUM_AREA_LIGHTS];
-#endif
-
-#define NUM_METABALLS 0
-#if NUM_METABALLS > 0
-uniform vec3  MetaballPositions[NUM_METABALLS];
-uniform vec4  MetaballColours[NUM_METABALLS];
-uniform float MetaballSizes[NUM_METABALLS];
-uniform int   MetaballMaterials[NUM_METABALLS];
+uniform vec3  AreaLightMaterials[NUM_AREA_LIGHTS];
 #endif
 
 uniform sampler2D perlinNoiseSampler;
@@ -66,14 +54,14 @@ struct Sphere {
     vec4  Colour;
     vec3  Position;
     float Radius;
-    int   MaterialID;
+    vec3  Material;
 };
 
 struct AABox {
     vec4 Colour;
     vec3 Position;
     vec3 Size;
-    int  MaterialID;
+    vec3 Material;
 };
 
 struct AreaLight {
@@ -82,7 +70,7 @@ struct AreaLight {
     vec3 Tangent;
     vec3 Normal;
     vec2 Size;
-    int  MaterialID;
+    vec3 Material;
 };
 
 struct HitPayload {
@@ -92,7 +80,7 @@ struct HitPayload {
     vec2  UV;
     float t;
     float t2;
-    int   MaterialID;
+    vec3  Material;
     vec3  ObjectPosition;
 };
 
@@ -129,7 +117,6 @@ float random (float min, float max)
 
 vec3 randomDirection()
 {
-    // generate random UV
     float x = random(-1.0, 1.0);
     float y = random(-1.0, 1.0);
     float z = random(-1.0, 1.0);
@@ -200,9 +187,9 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = Grid(HitUV * AlphaMaskUV, 0.4);
+            float a = Grid(HitUV * AlphaMaskUV, 0.4) * sphere.Material.z;
 
-            if (a == 1.0)
+            if (a == 0.0)
             {
                 return HitPayload(
                     sphere.Colour,
@@ -211,7 +198,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                     HitUV,
                     t,
                     t1,
-                    sphere.MaterialID, 
+                    sphere.Material, 
                     sphere.Position);
             }
         }
@@ -222,7 +209,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = Grid(HitUV * AlphaMaskUV, 0.4);
+            float a = Grid(HitUV * AlphaMaskUV, 0.4) * sphere.Material.z;
 
             if (a == 1.0)
             {
@@ -233,7 +220,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                     HitUV,
                     t1,
                     t,
-                    sphere.MaterialID, 
+                    sphere.Material, 
                     sphere.Position);
             }
         }
@@ -301,7 +288,7 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
             HitUV,
             mint,
             maxt,
-            box.MaterialID,
+            box.Material,
             box.Position);
     }
 
@@ -332,17 +319,11 @@ HitPayload IntersectRayPlane (Ray ray, HitPayload last, AreaLight plane)
                     HitUV,
                     t,
                     t,
-                    plane.MaterialID,
+                    plane.Material,
                     plane.Position);
             }
         }
     }
-
-    return last;
-}
-
-HitPayload IntersectRayMetaballs (Ray ray, HitPayload last)
-{
 
     return last;
 }
@@ -356,7 +337,7 @@ HitPayload TraceRay (Ray ray)
         vec2(0.0, 0.0),
         1000000.0,
         1000000.0,
-        0,
+        vec3(0.0, 0.0, 0.0),
         vec3(0.0, 0.0, 0.0)
     );
 
@@ -395,73 +376,6 @@ HitPayload TraceRay (Ray ray)
             AreaLightSizes[i],
             AreaLightMaterials[i]
         ));
-    }
-    #endif
-
-    #if NUM_METABALLS > 0
-    Hit = IntersectRayMetaballs(ray, Hit);
-    #endif
-
-    return Hit;
-}
-
-HitPayload TraceRayMaterialMasked (Ray ray, int MaterialID)
-{
-    HitPayload Hit = HitPayload(
-        vec4(0.3, 0.3, 0.3, 0.0),
-        vec3(-1.0, -1.0, -1.0),
-        vec3(-1.0, -1.0, -1.0),
-        vec2(0.0, 0.0),
-        1000000.0,
-        1000000.0,
-        0,
-        vec3(0.0, 0.0, 0.0)
-    );
-
-    #if NUM_SPHERES > 0
-    for (int i = 0; i < NUM_SPHERES; ++i)
-    {
-        if (SphereMaterials[i] == MaterialID)
-        {
-            Hit = IntersectRaySphere(ray, Hit, Sphere(
-                SphereColours[i],
-                SpherePositions[i],
-                SphereSizes[i],
-                SphereMaterials[i]
-            ));
-        }
-    }
-    #endif
-
-    #if NUM_AA_BOXES > 0
-    for (int i = 0; i < NUM_AA_BOXES; ++i)
-    {
-        if (AABoxMaterials[i] == MaterialID)
-        {
-            Hit = IntersectRayAABox(ray, Hit, AABox(
-                AABoxColours[i], 
-                AABoxPositions[i],
-                AABoxSizes[i],
-                AABoxMaterials[i]
-            ));
-        }
-    }
-    #endif
-
-    #if NUM_AREA_LIGHTS > 0
-    for (int i = 0; i < NUM_AREA_LIGHTS; ++i)
-    {
-        if (AreaLightMaterials[i] == MaterialID)
-        {
-            Hit = IntersectRayPlane(ray, Hit, AreaLight(
-                AreaLightColours[i],
-                AreaLightPositions[i],
-                AreaLightTangents[i],
-                AreaLightNormals[i],
-                AreaLightSizes[i],
-                AreaLightMaterials[i]
-            ));
-        }
     }
     #endif
 
@@ -507,14 +421,7 @@ vec3 Shadow (HitPayload Hit)
         HitPayload ShadowHit = TraceRay(ShadowRay);
         if (ShadowHit.t < 100000.0 && ShadowHit.Colour.a < 2.0)
         {
-            if (ShadowHit.MaterialID == DIFFUSE_MATERIAL_ID)
-            {
-                ShadowSample -= 0.75;
-            }
-            if (ShadowHit.MaterialID == REFRACTIVE_MATERIAL_ID)
-            {
-                ShadowSample += ShadowHit.Colour.rgb;
-            }
+            ShadowSample -= 0.75;
         }
     }
 
@@ -547,118 +454,11 @@ vec3 ShadeDiffuse(HitPayload Hit)
     return (diffuse / float(NUM_DIFFUSE_SAMPLES)) * Shadow(Hit);
 }
 
-vec3 ShadeRefractive(HitPayload Hit, Ray InitialRay)
-{
-    vec3 Refract = vec3(0.0, 0.0, 0.0);
-
-    Ray RefractRay = Ray(Hit.Position, InitialRay.Direction);
-    HitPayload RefractHit = TraceRayMaterialMasked(RefractRay, DIFFUSE_MATERIAL_ID);
-
-    if (RefractHit.t < 100000.0)
-    {
-        if (RefractHit.MaterialID == DIFFUSE_MATERIAL_ID)
-        {
-            Refract += ShadeDiffuse(RefractHit);
-        }
-    }
-    else
-    {
-        Refract += vec3(1.0, 1.0, 1.0);
-    }
-
-    float t = Hit.Colour.a * (1.0 - abs(dot(InitialRay.Direction, Hit.Normal)));
-    return mix(Hit.Colour.rgb, Refract, saturate(t));
-}
-
-
 vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
 {
     vec3 Specular = vec3(0.0, 0.0, 0.0);
 
-    Ray BounceRay = Ray(Hit.Position, reflect(InitialRay.Direction, Hit.Normal));
-    HitPayload BounceHit = TraceRay(BounceRay);
-    
-    if (BounceHit.t < 100000.0)
-    {
-        if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
-        {
-            Specular += ShadeDiffuse(BounceHit);
-        }
-        if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
-        {
-            Specular += ShadeRefractive(BounceHit, BounceRay);
-        }
-        if (BounceHit.MaterialID == REFLECTIVE_MATERIAL_ID)
-        {
-            BounceRay = Ray(BounceHit.Position, reflect(BounceRay.Direction, BounceHit.Normal));
-            BounceHit = TraceRay(BounceRay);
-
-            if (BounceHit.t < 100000.0)
-            {
-                if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
-                {
-                    Specular += ShadeDiffuse(BounceHit);
-                }
-                if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
-                {
-                    Specular += ShadeRefractive(BounceHit, BounceRay);
-                }
-                if (BounceHit.MaterialID == REFLECTIVE_MATERIAL_ID)
-                {
-                    BounceRay = Ray(BounceHit.Position, reflect(BounceRay.Direction, BounceHit.Normal));
-                    BounceHit = TraceRay(BounceRay);
-
-                    if (BounceHit.t < 100000.0)
-                    {
-                        if (BounceHit.MaterialID == DIFFUSE_MATERIAL_ID)
-                        {
-                            Specular += ShadeDiffuse(BounceHit);
-                        }
-                        if (BounceHit.MaterialID == REFRACTIVE_MATERIAL_ID)
-                        {
-                            Specular += ShadeRefractive(BounceHit, BounceRay);
-                        }
-                    }
-                    else
-                    {
-                        Specular += vec3(1.0);
-                    }
-                }
-            }
-            else
-            {
-                Specular += vec3(1.0);
-            }
-        }
-    }
-    else
-    {
-        Specular += vec3(1.0);
-    }
-
-    return mix(Hit.Colour.rgb, Specular, Hit.Colour.a);
-}
-
-
-vec3 ShadeSmokeVolume(HitPayload Hit, Ray InitialRay)
-{
-    vec3 HitColour = Hit.Colour.rgb * texture(perlinNoiseSampler, Hit.UV).rgb;
-
-    float scatter = random(0.0, 1.0);
-    if (scatter < 0.5)
-    {
-        Ray ScatterRay = Ray(Hit.Position, randomDirection());
-        HitPayload ScatterHit = TraceRayMaterialMasked(
-            ScatterRay,
-            DIFFUSE_MATERIAL_ID);
-        return ShadeDiffuse(ScatterHit);
-    }
-
-    Ray PassThroughRay = Ray(Hit.Position, InitialRay.Direction);
-    HitPayload PassThroughHit = TraceRayMaterialMasked(
-        PassThroughRay,
-        DIFFUSE_MATERIAL_ID);
-    return ShadeDiffuse(PassThroughHit);
+    return Specular;
 }
 
 vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
@@ -666,7 +466,11 @@ vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
     float Lighting = 0.2;
     for (int i = 0; i < NUM_AREA_LIGHTS; ++i)
     {
-        vec3 LightPosition = AreaLightPositions[i];
+        #if NUM_AREA_LIGHTS > 0
+            vec3 LightPosition = AreaLightPositions[i];
+        #else
+            vec3 LightPosition = vec3(0.0, 0.0, 0.0);
+        #endif
         vec3 DirectionToLight = normalize(LightPosition - Hit.Position);
         Lighting += max(dot (DirectionToLight, Hit.Normal), 0.0);
     }

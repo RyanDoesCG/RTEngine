@@ -54,20 +54,9 @@ var basePassFragmentShaderFooterSource = `
                 return;
             }
 
-            if (Hit.MaterialID == DIFFUSE_MATERIAL_ID)
-            {
-                Result = ShadeDiffuse(Hit);
-            }
+            Result = ShadeDiffuse(Hit) * Hit.Material.x;
+          //  Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
 
-            if (Hit.MaterialID == REFLECTIVE_MATERIAL_ID)
-            {
-                Result = ShadeReflective(Hit, PrimaryRay);
-            }
-
-            if (Hit.MaterialID == REFRACTIVE_MATERIAL_ID)
-            {
-                Result = ShadeRefractive(Hit, PrimaryRay);
-            }
         }
         
         out_color = vec4(Result.rgb , 1.0);
