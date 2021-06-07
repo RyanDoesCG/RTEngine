@@ -81,20 +81,24 @@
     // SCENE GEOMETRY
     var SpherePositions = [ 
          0.0, 2.5545, 0.0,
-         0.0, 2.5545, 0.0
+         0.0, 2.5545, 0.0,
+         0.0, 0.0, 0.0
     ]
     var SphereColours = [ 
         1.0, 0.0, 0.0, 0.0,
-        1.0, 1.0, 1.0, 4.0
+        1.0, 1.0, 1.0, 4.0,
+        1.0, 0.0, 1.0, 0.0
     ]
     var SphereSizes = [ 
         2.3545,
-        1.5
+        1.5,
+        64.0
     ]
     var SphereMaterials = [
         // diffuse   reflective    alpha mask
         1.0,         0.0,          1.0,
-        4.0,         0.0,          0.0
+        4.0,         0.0,          0.0,
+        1.0,         0.0,          0.0
     ]
 
     var BoxPositions = [

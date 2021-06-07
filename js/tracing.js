@@ -211,7 +211,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
 
             float a = Grid(HitUV * AlphaMaskUV, 0.4) * sphere.Material.z;
 
-            if (a == 1.0)
+            if (a == 0.0)
             {
                 return HitPayload(
                     sphere.Colour,
