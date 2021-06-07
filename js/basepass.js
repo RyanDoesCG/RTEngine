@@ -55,7 +55,7 @@ var basePassFragmentShaderFooterSource = `
             }
 
             Result = ShadeDiffuse(Hit) * Hit.Material.x;
-          //  Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
+            Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
 
         }
         

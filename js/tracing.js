@@ -456,9 +456,35 @@ vec3 ShadeDiffuse(HitPayload Hit)
 
 vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
 {
-    vec3 Specular = vec3(0.0, 0.0, 0.0);
+    vec3 specular = Hit.Colour.rgb;
+    if (Hit.Colour.a >= 2.0)
+    {
+        return specular;
+    }
 
-    return Specular;
+    Ray LastRay = InitialRay;
+    float Dead = 1.0;
+    for (int i = 0; i < NUM_SPECULAR_BOUNCES; ++i)
+    {
+        Ray BounceRay = Ray(
+            Hit.Position + Hit.Normal * 0.001,
+            reflect(LastRay.Direction, Hit.Normal));
+        Hit = TraceRay(BounceRay);
+
+        specular += 
+            Dead * 
+            ShadeDiffuse(Hit) * 
+            Hit.Material.x * 
+            (1.0 - (float(i) / float(NUM_SPECULAR_BOUNCES)));
+       
+        if (Hit.Material.y < 0.1)
+        {
+            Dead = 0.0;
+        }
+        LastRay = BounceRay;
+    }
+
+    return specular;// * Shadow(Hit);
 }
 
 vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
