@@ -17,6 +17,9 @@ var presentPassFragmentShaderHeaderSource =
     uniform sampler2D UVBuffer;
     in vec2 frag_uvs;
     out vec4 out_color;
+
+    uniform float Time;
+
 `
 
 var presentPassFragmentShaderFooterSource = `

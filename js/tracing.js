@@ -7,7 +7,7 @@ var tracingShaderCode = `
 
 #define NUM_SPECULAR_BOUNCES 2
 
-#define NUM_SPHERES 6
+#define NUM_SPHERES 0
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -23,6 +23,11 @@ uniform vec3 AABoxSizes[NUM_AA_BOXES];
 uniform vec3  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
+#define NUM_TRIANGLES 8
+#if NUM_TRIANGLES > 0
+uniform vec3 TriangleVertexPositions[NUM_TRIANGLES * 3];
+#endif
+
 #define NUM_AREA_LIGHTS 1
 #if NUM_AREA_LIGHTS > 0
 uniform vec3 AreaLightPositions[NUM_AREA_LIGHTS];
@@ -36,6 +41,7 @@ uniform vec3  AreaLightMaterials[NUM_AREA_LIGHTS];
 uniform sampler2D perlinNoiseSampler;
 uniform sampler2D whiteNoiseSampler;
 uniform sampler2D blueNoiseSampler;
+uniform sampler2D brot0Sampler;
 
 uniform float Width;
 uniform float Height;
@@ -61,6 +67,14 @@ struct AABox {
     vec4 Colour;
     vec3 Position;
     vec3 Size;
+    vec3 Material;
+};
+
+struct Triangle {
+    vec4 Colour;
+    vec3 A;
+    vec3 B;
+    vec3 C;
     vec3 Material;
 };
 
@@ -187,9 +201,15 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = Grid(HitUV * AlphaMaskUV, 0.4) * sphere.Material.z;
+//            float a = texture(brot0Sampler, HitUV).r * sphere.Material.z;
 
-            if (a == 0.0)
+            float a = 1.0 * sphere.Material.z;
+            if (abs(0.5 - HitUV.y) > 0.02)
+            {
+                a = 0.0;
+            }
+
+            if (a < 0.1)
             {
                 return HitPayload(
                     sphere.Colour,
@@ -209,9 +229,15 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = Grid(HitUV * AlphaMaskUV, 0.4) * sphere.Material.z;
+ //           float a = texture(brot0Sampler, HitUV).r * sphere.Material.z;
 
-            if (a == 0.0)
+ float a = 1.0 * sphere.Material.z;
+            if (abs(0.5 - HitUV.y) > 0.02)
+            {
+                a = 0.0;
+            }
+
+            if (a < 0.1)
             {
                 return HitPayload(
                     sphere.Colour,
@@ -328,6 +354,45 @@ HitPayload IntersectRayPlane (Ray ray, HitPayload last, AreaLight plane)
     return last;
 }
 
+HitPayload IntersectRayTriangle (Ray ray, HitPayload last, Triangle tri)
+{
+    vec3 u = tri.B - tri.A; 
+    vec3 v = tri.C - tri.A;
+    vec3 n = cross(ray.Direction, v);
+
+    float area = dot(u, n);
+
+    vec3 s = ray.Origin - tri.A;
+    vec3 r = cross(s, u);
+
+    float beta  = dot (s, n) / area;
+    float gamma = dot (ray.Direction, r) / area;
+    float alpha = 1.0 - (beta + gamma);
+
+    float t = dot (v, r) / area;
+
+    float eps1 = 1e-7f;
+    float eps2 = 1e-10;
+
+    if (!((area  <=  eps1) || (alpha <  -eps2) || (beta  <  -eps2) || (gamma <  -eps2) || (t <= 0.0)))
+    {
+        if (t < last.t)
+        {
+            return HitPayload (
+                tri.Colour,
+                ray.Origin + ray.Direction * t,
+                normalize(cross(u, v)),
+                vec2(0.0, 0.0),
+                t,
+                t,
+                tri.Material,
+                vec3(0.0, 0.0, 0.0));
+        }
+    }
+
+    return last;
+}
+
 HitPayload TraceRay (Ray ray)
 {
     HitPayload Hit = HitPayload(
@@ -361,6 +426,19 @@ HitPayload TraceRay (Ray ray)
             AABoxPositions[i],
             AABoxSizes[i],
             AABoxMaterials[i]
+        ));
+    }
+    #endif
+
+    #if NUM_TRIANGLES > 0
+    for (int i = 0; i < NUM_TRIANGLES * 3; i += 3)
+    {
+        Hit = IntersectRayTriangle(ray, Hit, Triangle(
+            vec4(0.1, 0.1, 0.1, 1.0),
+            TriangleVertexPositions[i + 0],
+            TriangleVertexPositions[i + 1],
+            TriangleVertexPositions[i + 2],
+            vec3(1.0, 0.0, 0.0)
         ));
     }
     #endif
