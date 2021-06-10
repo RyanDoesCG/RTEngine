@@ -30,6 +30,8 @@ function createColourTexture(gl, width, height)
     return texture;
 }
 
+var ImagesLoaded = []; 
+
 function loadTexture(gl, texturePath)
 {
     const texture = gl.createTexture();
@@ -54,6 +56,9 @@ function loadTexture(gl, texturePath)
         srcType,
         data);
 
+    var index = ImagesLoaded.length;
+    ImagesLoaded.push(false)
+
     const image = new Image();
     image.src = texturePath;
     image.onload = function() {
@@ -61,6 +66,7 @@ function loadTexture(gl, texturePath)
         console.log(" ")
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
+        ImagesLoaded[index] = true;
     };
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);

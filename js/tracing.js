@@ -5,9 +5,9 @@ var tracingShaderCode = `
 #define NUM_DIFFUSE_SAMPLES 1
 #define NUM_DIFFUSE_BOUNCES 2
 
-#define NUM_SPECULAR_BOUNCES 2
+#define NUM_SPECULAR_BOUNCES 4
 
-#define NUM_SPHERES 0
+#define NUM_SPHERES 4
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -553,7 +553,7 @@ vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
             Dead * 
             ShadeDiffuse(Hit) * 
             Hit.Material.x * 
-            (1.0 - (float(i) / float(NUM_SPECULAR_BOUNCES)));
+            (1.0 - (float(i) / float(NUM_SPECULAR_BOUNCES - 1)));
        
         if (Hit.Material.y < 0.1)
         {
