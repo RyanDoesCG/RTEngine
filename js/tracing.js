@@ -202,8 +202,6 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-//            float a = texture(brot0Sampler, HitUV).r * sphere.Material.z;
-
             float a = 1.0 * sphere.Material.z;
             if (abs(0.5 - HitUV.y) > 0.02)
             {
@@ -215,12 +213,16 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
                 vec3 Bitangent = cross(HitNormal, Tangent);
                 vec3 Normal = HitNormal;
-                mat3 TBN = mat3(Tangent, Bitangent, Normal);
 
+                vec3 ShadingNormal = normalize(
+                    mat3(Tangent, Bitangent, Normal) 
+                    * 
+                    (texture(NormalSampler, HitUV * 1.0).xyz * 2.0 - 1.0));
+    
                 return HitPayload(
                     sphere.Colour,
                     HitPosition,
-                    TBN * texture(NormalSampler, HitUV * 5.0).xyz,
+                    ShadingNormal,
                     HitUV,
                     t,
                     t1,
@@ -250,7 +252,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 return HitPayload(
                     sphere.Colour,
                     HitPosition,
-                    TBN * texture(NormalSampler, HitUV * 5.0).xyz,
+                    Normal,
                     HitUV,
                     t1,
                     t,
@@ -303,24 +305,15 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
             abs(HitPositionLocalSpace.y + HitPositionLocalSpace.z * abs(HitNormal.y))
         );
 
-        float Offset = 0.1;
-        float HeightHere  = texture(perlinNoiseSampler, HitUV).r;
-        float HeightUp    = texture(perlinNoiseSampler, HitUV + vec2(0.0, Offset)).r;
-        float HeightDown  = texture(perlinNoiseSampler, HitUV + vec2(0.0, -Offset)).r;
-        float HeightLeft  = texture(perlinNoiseSampler, HitUV + vec2(-Offset, 0.0)).r;
-        float HeightRight = texture(perlinNoiseSampler, HitUV + vec2(Offset, 0.0)).r;
-
-        vec2 s = vec2(1.0, 0.0);
-        vec3 a = normalize(vec3(s.xy, HeightRight - HeightUp));
-        vec3 b = normalize(vec3(s.yx, HeightUp - HeightDown));
-        vec3 n = cross(a, b).xyz;
-
-        mat3 TBN = mat3(HitTangent, HitBitangent, HitNormal);
+        vec3 ShadingNormal = normalize(
+            mat3(HitTangent, HitBitangent, HitNormal) 
+            * 
+            (texture(NormalSampler, HitUV * 0.1).xyz * 2.0 - 1.0));
 
         return HitPayload(
             box.Colour,
             HitPositionWorldSpace,
-            TBN * texture(NormalSampler, HitUV * 0.1).xyz,
+            ShadingNormal,
             HitUV,
             mint,
             maxt,
