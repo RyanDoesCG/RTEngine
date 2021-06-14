@@ -35,17 +35,30 @@
     var presentPassUVSampler     = gl.getUniformLocation(presentPassShaderProgram, "UVBuffer");
 
     // TEXTURES
-    var PerlinNoiseTexture = loadTexture(gl, 'images/simplex.png')
-    var WhiteNoiseTexture = loadTexture(gl, 'images/white.png')
-    var BlueNoiseTexture = loadTexture(gl, 'images/blue.png')
-    var MandlebrotTexture0 = loadTexture(gl, 'images/brot_3.png')
-    var NormalTexture = loadTexture(gl, 'images/normal2.png')
+    var PerlinNoiseTexture = loadTexture(gl, 'images/noise/simplex.png')
+    var WhiteNoiseTexture = loadTexture(gl, 'images/noise/white.png')
+    var BlueNoiseTexture = loadTexture(gl, 'images/noise/blue.png')
+    var MandlebrotTexture0 = loadTexture(gl, 'images/fractals/brot_3.png')
+
+    var WoodAlbedoTexture = loadTexture(gl, 'images/wood/wood_albedo.jpg')
+    var WoodNormalTexture = loadTexture(gl, 'images/wood/wood_normal.jpg')
+    var ConcreteAlbedoTexture = loadTexture(gl, 'images/concrete/concrete_albedo.jpg')
+    var ConcreteNormalTexture = loadTexture(gl, 'images/concrete/concrete_normal.jpg')
+
+    var SkyDomeTexture = loadTexture(gl, 'images/skydome.jpg')
 
     var basePassPerlinNoiseSampler = gl.getUniformLocation(basePassShaderProgram, "perlinNoiseSampler");
     var basePassWhiteNoiseSampler  = gl.getUniformLocation(basePassShaderProgram, "whiteNoiseSampler");
     var basePassBlueNoiseSampler   = gl.getUniformLocation(basePassShaderProgram, "blueNoiseSampler");
     var basePassBrotSampler   = gl.getUniformLocation(basePassShaderProgram, "brot0Sampler");
-    var basePassNormalSampler = gl.getUniformLocation(basePassShaderProgram, "NormalSampler")
+
+    var basePassWoodAlbedoSampler = gl.getUniformLocation(basePassShaderProgram, "WoodAlbedoSampler")
+    var basePassWoodNormalSampler = gl.getUniformLocation(basePassShaderProgram, "WoodNormalSampler")
+
+    var basePassConcreteAlbedoSampler = gl.getUniformLocation(basePassShaderProgram, "ConcreteAlbedoSampler")
+    var basePassConcreteNormalSampler = gl.getUniformLocation(basePassShaderProgram, "ConcreteNormalSampler")
+
+    var basePassSkyDomeSampler = gl.getUniformLocation(basePassShaderProgram, "SkyDomeSampler");
 
     // SCREEN PASS GEOMETRY
     var screenGeometryPositions = new Float32Array([
@@ -78,144 +91,135 @@
     gl.enableVertexAttribArray(1);
 
     // SCENE GEOMETRY
+    // SCENE GEOMETRY
     var SpherePositions = [ 
-         0.0, 1.7,  0.0,
-        -2.0, 0.6,  0.0,
-         0.0, 0.6,  2.0,
-         0.0, 0.6, -2.0
-    ]
-    var SphereColours = [ 
-        0.3, 0.3, 0.3, 0.0,
-        1.0, 1.0, 1.0, 1.6,
-        1.0, 1.0, 1.0, 1.6,
-        1.0, 1.0, 1.0, 1.6
-    ]
-    var SphereSizes = [ 
-        1.5,
-        0.5,
-        0.5,
-        0.5
-    ]
-    var SphereMaterials = [
-        // diffuse   reflective    alpha mask
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-    ]
+        0.0, 1.7,  0.0,
+        0.0, 0.0,  0.0
+   ]
+   var SphereColours = [ 
+       1.0, 1.0, 1.0, 1.0,
+       1.0, 1.0, 1.0, 1.6
+   ]
+   var SphereSizes = [ 
+       1.5,
+       100.0
+   ]
+   var SphereMaterials = [
+       // diffuse   reflective    alpha mask   // texture index
+       0.8,         0.0,          0.0,         3.0,
+       1.0,         0.0,          0.0,         0.0
+   ]
 
-    var BoxPositions = [
-        0.0, 0.0, 0.0,  // floor
-        0.0, 10.0, 0.0,  // floor
+   var BoxPositions = [
+       0.0, 7.8, 3.0,  // floor
+       -4.1, 3.9, 0.0,  // floor
+       0.0, 3.9, 4.0,  // floor
+       0.0, 0.0, 0.0,  // floor
+       4.1, 3.9, 0.0,  // floor
+       0.0, 7.8, -3.0,  // floor
+       3.0, 7.8, 0.0,
+       -3.0, 7.8, 0.0,
+        0.0, 7.8, 0.0
+   ]
+   var BoxColours = [
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
+   ]
+   var BoxSizes = [
+       4.0, 0.1, 1.0, // floor
+       0.1, 4.0, 4.0, // floor
+       4.0, 4.0, 0.1, // floor
+       4.0, 0.1, 4.0, // floor
+       0.1, 4.0, 4.0, // floor
+       4.0, 0.1, 1.0, // floor
+       1.0, 0.1, 2.0, // floor
+       1.0, 0.1, 2.0, // floor
+       1.0, 0.1, 2.0, // floor
+   ]
+   var BoxMaterials = [
+       // diffuse   reflective    alpha mask  texture index
+       1.0,         0.0,          0.0,        0.0,
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        1.0, 
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        0.0, 
+       1.0,         0.0,          0.0,        0.0
+   ]
 
-        -7.0, 8.0, 5.0,  // floor
-        -8.0, 8.0, 0.0,  // floor
-        -7.0, 8.0, -8.0,  // floor
+   var TriangleVertexPositions = [
+        1.0, 2.0, -1.0,
+       -1.0, 2.0, -1.0,
+        0.0, 3.8,  0.0,
 
-        7.0, 8.0, 5.0,  // floor
-        8.0, 8.0, 0.0,  // floor
-        7.0, 8.0, -8.0,  // floor
-    ]
-    var BoxColours = [
-        0.5, 0.5, 0.5, 0.0, // floor
-        0.5, 0.5, 0.5, 0.0, // floor
+       -1.0, 2.0,  1.0,
+        1.0, 2.0,  1.0,
+        0.0, 3.8,  0.0,
 
-        0.5, 0.5, 0.5, 0.0, // floor
-        0.4, 1.0, 0.4, 2.0, // floor
-        0.5, 0.5, 0.5, 0.0, // floor
+       -1.0, 2.0, -1.0,
+       -1.0, 2.0,  1.0,
+        0.0, 3.8,  0.0,
 
-        0.5, 0.5, 0.5, 0.0, // floor
-        1.0, 0.4, 0.4, 2.0, // floor
-        0.5, 0.5, 0.5, 0.0, // floor
-    ]
-    var BoxSizes = [
-        16.0, 0.1, 16.0, // floor
-        16.0, 0.1, 16.0, // floor
+        1.0, 2.0,  1.0,
+        1.0, 2.0, -1.0,
+        0.0, 3.8,  0.0,
 
-        2.0, 10.0, 4.0, // floor
-        2.0, 10.0, 4.0, // floor
-        2.0, 10.0, 4.0, // floor
 
-        2.0, 10.0, 4.0, // floor
-        2.0, 10.0, 4.0, // floor
-        2.0, 10.0, 4.0, // floor
-    ]
-    var BoxMaterials = [
-        // diffuse   reflective    alpha mask
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        2.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-        2.0,         0.0,          0.0,
-        1.0,         0.0,          0.0
-    ]
-
-    var TriangleVertexPositions = [
-         1.0, 2.0, -1.0,
         -1.0, 2.0, -1.0,
-         0.0, 3.8,  0.0,
+         1.0, 2.0, -1.0,
+         0.0, 0.2,  0.0,
+
+         1.0, 2.0,  1.0,
+        -1.0, 2.0,  1.0,
+         0.0, 0.2,  0.0,
 
         -1.0, 2.0,  1.0,
-         1.0, 2.0,  1.0,
-         0.0, 3.8,  0.0,
-
         -1.0, 2.0, -1.0,
-        -1.0, 2.0,  1.0,
-         0.0, 3.8,  0.0,
+         0.0, 0.2,  0.0,
  
-         1.0, 2.0,  1.0,
          1.0, 2.0, -1.0,
-         0.0, 3.8,  0.0,
+         1.0, 2.0,  1.0,
+         0.0, 0.2,  0.0
+   ]
 
-
-         -1.0, 2.0, -1.0,
-          1.0, 2.0, -1.0,
-          0.0, 0.2,  0.0,
- 
-          1.0, 2.0,  1.0,
-         -1.0, 2.0,  1.0,
-          0.0, 0.2,  0.0,
- 
-         -1.0, 2.0,  1.0,
-         -1.0, 2.0, -1.0,
-          0.0, 0.2,  0.0,
-  
-          1.0, 2.0, -1.0,
-          1.0, 2.0,  1.0,
-          0.0, 0.2,  0.0
-    ]
-
-    var AreaLightPositions = [
-        0.0, 7.7, 0.0,
-        0.0, 1.0, 0.0
-    ]
-    var AreaLightRotations = [
-        0.0, 0.0, 0.0,
-        0.0, 0.0, -0.6
-    ]
-    var AreaLightNormals = [
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0
-    ]
-    var AreaLightTangents = [
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0
-    ]
-    var AreaLightColours = [
-        1.0, 1.0, 1.0, 2.0, // light
-        0.3, 0.0, 0.0, 2.0  // light
-    ]
-    var AreaLightSizes = [
-        4.0, 4.0, // light
-        10.0, 2.0  // light
-    ]
-    var AreaLightMaterials = [
-        // diffuse   reflective    alpha mask
-        1.0,         0.0,          0.0,
-        1.0,         0.0,          0.0,
-    ]
+   var AreaLightPositions = [
+       0.0, 8.0, 0.0,
+       0.0, 1.0, 0.0
+   ]
+   var AreaLightRotations = [
+       0.0, 0.0, 0.0,
+       0.0, 0.0, -0.6
+   ]
+   var AreaLightNormals = [
+       0.0, -1.0,  0.0,
+       0.0, -1.0,  0.0
+   ]
+   var AreaLightTangents = [
+       0.0,  0.0, -1.0,
+       0.0,  0.0, -1.0
+   ]
+   var AreaLightColours = [
+       6.0, 6.0, 6.0, 2.0, // light
+       0.3, 0.0, 0.0, 2.0  // light
+   ]
+   var AreaLightSizes = [
+       6.0, 6.0, // light
+       10.0, 2.0  // light
+   ]
+   var AreaLightMaterials = [
+       // diffuse   reflective    alpha mask
+       1.0,         0.0,          0.0,       0.0,
+       1.0,         0.0,          0.0,       0.0
+   ]
 
     var basePassSpherePositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SpherePositions")
     var basePassSphereColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SphereColours")
@@ -300,18 +304,34 @@
         gl.uniform1i(basePassBrotSampler, 3);
 
         gl.activeTexture(gl.TEXTURE4);
-        gl.bindTexture(gl.TEXTURE_2D, NormalTexture);
-        gl.uniform1i(basePassNormalSampler, 4);
+        gl.bindTexture(gl.TEXTURE_2D, ConcreteAlbedoTexture);
+        gl.uniform1i(basePassConcreteAlbedoSampler, 4);
+
+        gl.activeTexture(gl.TEXTURE5);
+        gl.bindTexture(gl.TEXTURE_2D, ConcreteNormalTexture);
+        gl.uniform1i(basePassConcreteNormalSampler, 5);
+
+        gl.activeTexture(gl.TEXTURE6);
+        gl.bindTexture(gl.TEXTURE_2D, WoodAlbedoTexture);
+        gl.uniform1i(basePassWoodAlbedoSampler, 6);
+
+        gl.activeTexture(gl.TEXTURE7);
+        gl.bindTexture(gl.TEXTURE_2D, WoodNormalTexture);
+        gl.uniform1i(basePassWoodNormalSampler, 7);
+
+        gl.activeTexture(gl.TEXTURE8);
+        gl.bindTexture(gl.TEXTURE_2D, SkyDomeTexture);
+        gl.uniform1i(basePassSkyDomeSampler, 8);
 
         gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(basePassSphereColoursUniformLoc, SphereColours)
         gl.uniform1fv(basePassSphereSizesUniformLoc, SphereSizes)
-        gl.uniform3fv(basePassSphereMaterialsUniformLoc, SphereMaterials)
+        gl.uniform4fv(basePassSphereMaterialsUniformLoc, SphereMaterials)
 
         gl.uniform3fv(basePassBoxPositionUniformLoc, BoxPositions)
         gl.uniform4fv(basePassBoxColoursUniformLoc, BoxColours)
         gl.uniform3fv(basePassBoxSizesUniformLoc, BoxSizes)
-        gl.uniform3fv(basePassBoxMaterialsUniformLoc, BoxMaterials)
+        gl.uniform4fv(basePassBoxMaterialsUniformLoc, BoxMaterials)
 
         gl.uniform3fv(basePassTriangleVertexPositionsUniformLoc, TriangleVertexPositions)
 
@@ -320,7 +340,7 @@
         gl.uniform3fv(basePassAreaLightTangentUniformLoc,  AreaLightTangents)
         gl.uniform4fv(basePassAreaLightColoursUniformLoc,  AreaLightColours)
         gl.uniform2fv(basePassAreaLightSizesUniformLoc,    AreaLightSizes)
-        gl.uniform3fv(basePassAreaLightMaterialsUniformLoc, AreaLightMaterials)
+        gl.uniform4fv(basePassAreaLightMaterialsUniformLoc, AreaLightMaterials)
 
         gl.uniform1f (basePassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (basePassHeightUniformLoc, canvas.clientHeight)

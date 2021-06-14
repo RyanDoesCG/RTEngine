@@ -3,46 +3,53 @@ var tracingShaderCode = `
 #define PI 3.1415926538
 
 #define NUM_DIFFUSE_SAMPLES 1
-#define NUM_DIFFUSE_BOUNCES 2
+#define NUM_DIFFUSE_BOUNCES 1
 
-#define NUM_SPECULAR_BOUNCES 4
+#define NUM_SPECULAR_BOUNCES 1
 
 #define NUM_SPHERES 1
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
 uniform float SphereSizes[NUM_SPHERES];
-uniform vec3   SphereMaterials[NUM_SPHERES];
+uniform vec4   SphereMaterials[NUM_SPHERES];
 #endif
 
-#define NUM_AA_BOXES 10
+#define NUM_AA_BOXES 8
 #if NUM_AA_BOXES > 0
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
 uniform vec3 AABoxSizes[NUM_AA_BOXES];
-uniform vec3  AABoxMaterials[NUM_AA_BOXES];
+uniform vec4  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
-#define NUM_TRIANGLES 0 // 8
+#define NUM_TRIANGLES 0
 #if NUM_TRIANGLES > 0
 uniform vec3 TriangleVertexPositions[NUM_TRIANGLES * 3];
 #endif
 
-#define NUM_AREA_LIGHTS 0
+#define NUM_AREA_LIGHTS 1
 #if NUM_AREA_LIGHTS > 0
 uniform vec3 AreaLightPositions[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightNormals[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightTangents[NUM_AREA_LIGHTS];
 uniform vec4 AreaLightColours[NUM_AREA_LIGHTS];
 uniform vec2 AreaLightSizes[NUM_AREA_LIGHTS];
-uniform vec3 AreaLightMaterials[NUM_AREA_LIGHTS];
+uniform vec4 AreaLightMaterials[NUM_AREA_LIGHTS];
 #endif
 
 uniform sampler2D perlinNoiseSampler;
 uniform sampler2D whiteNoiseSampler;
 uniform sampler2D blueNoiseSampler;
 uniform sampler2D brot0Sampler;
-uniform sampler2D NormalSampler;
+
+uniform sampler2D WoodAlbedoSampler;
+uniform sampler2D WoodNormalSampler;
+
+uniform sampler2D ConcreteAlbedoSampler;
+uniform sampler2D ConcreteNormalSampler;
+
+uniform sampler2D SkyDomeSampler;
 
 uniform float Width;
 uniform float Height;
@@ -61,14 +68,14 @@ struct Sphere {
     vec4  Colour;
     vec3  Position;
     float Radius;
-    vec3  Material;
+    vec4  Material;
 };
 
 struct AABox {
     vec4 Colour;
     vec3 Position;
     vec3 Size;
-    vec3 Material;
+    vec4 Material;
 };
 
 struct Triangle {
@@ -76,7 +83,7 @@ struct Triangle {
     vec3 A;
     vec3 B;
     vec3 C;
-    vec3 Material;
+    vec4 Material;
 };
 
 struct AreaLight {
@@ -85,7 +92,7 @@ struct AreaLight {
     vec3 Tangent;
     vec3 Normal;
     vec2 Size;
-    vec3 Material;
+    vec4 Material;
 };
 
 struct HitPayload {
@@ -95,7 +102,7 @@ struct HitPayload {
     vec2  UV;
     float t;
     float t2;
-    vec3  Material;
+    vec4  Material;
     vec3  ObjectPosition;
 };
 
@@ -110,6 +117,44 @@ vec3 saturate (vec3 v)
         clamp(v.x, 0.0, 1.0),
         clamp(v.y, 0.0, 1.0),
         clamp(v.z, 0.0, 1.0)); 
+}
+
+float Grid (vec2 uv, float Thickness)
+{
+    return mix(
+        0.0, 
+        1.0, 
+        float((fract(uv.x * 20.0) > Thickness) || 
+              (fract(uv.y * 20.0) > Thickness)));
+}
+
+vec4 AlbedoForTextureID(vec2 UV, float index)
+{
+    if (index == 0.0) return texture(ConcreteAlbedoSampler, UV);
+    if (index == 1.0) return texture(WoodAlbedoSampler, UV);
+    if (index == 2.0) return vec4(Grid(UV, 0.9));
+    if (index == 3.0) return vec4(0.2);
+    return vec4(1.0, 0.0, 1.0, 1.0);
+}
+
+vec4 NormalForTextureID(vec2 UV, float index)
+{
+    if (index == 0.0) 
+    {
+        return -1.0 + texture(ConcreteNormalSampler, UV) * 2.0;
+    }
+
+    if (index == 1.0) 
+    {
+        return -1.0 + texture(WoodNormalSampler, UV) * 2.0;
+    }
+
+    if (index == 2.0) 
+    {
+        return vec4(0.0, 0.0, 1.0, 0.0);
+    }
+
+    return vec4(0.0, 0.0, 1.0, 0.0);
 }
 
 
@@ -151,15 +196,6 @@ vec3 randomPointOnPlane(AreaLight plane)
     float v = random(0.0, 1.0) * plane.Size.y;
 
     return BottomLeftCorner + (PlaneU * u) + (PlaneV * v);
-}
-
-float Grid (vec2 uv, float Thickness)
-{
-    return mix(
-        0.0, 
-        1.0, 
-        float((fract(uv.x * 20.0) > Thickness) || 
-              (fract(uv.y * 20.0) > Thickness)));
 }
 
 vec2 SphereUV (vec3 Normal)
@@ -214,13 +250,14 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 vec3 Bitangent = cross(HitNormal, Tangent);
                 vec3 Normal = HitNormal;
 
+                vec4 ShadingAlbedo = AlbedoForTextureID(HitUV, sphere.Material.w);
                 vec3 ShadingNormal = normalize(
                     mat3(Tangent, Bitangent, Normal) 
                     * 
-                    (texture(NormalSampler, HitUV * 1.0).xyz * 2.0 - 1.0));
+                    (NormalForTextureID(HitUV, sphere.Material.w).xyz));
     
                 return HitPayload(
-                    sphere.Colour,
+                    ShadingAlbedo,
                     HitPosition,
                     ShadingNormal,
                     HitUV,
@@ -248,11 +285,15 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
                 vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
                 vec3 Bitangent = cross(HitNormal, Tangent);
                 vec3 Normal = HitNormal;
-                mat3 TBN = mat3(Tangent, Bitangent, Normal);
+                vec4 ShadingAlbedo = AlbedoForTextureID(HitUV, sphere.Material.w);
+                vec3 ShadingNormal = normalize(
+                    mat3(Tangent, Bitangent, Normal) 
+                    * 
+                    (NormalForTextureID(HitUV, sphere.Material.w).xyz));
                 return HitPayload(
-                    sphere.Colour,
+                    ShadingAlbedo,
                     HitPosition,
-                    Normal,
+                    ShadingNormal,
                     HitUV,
                     t1,
                     t,
@@ -289,36 +330,53 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
         vec3 HitPositionLocalSpace = HitPositionWorldSpace - box.Position;
 
         vec3 HitNormal = vec3(
-            (float(abs(HitPositionLocalSpace.x - box.Size.x) < 0.000001)) - (float(abs(HitPositionLocalSpace.x - -box.Size.x) < 0.000001)), 
-            (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.000001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.000001)), 
-            (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.000001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.000001)));
+            (float(abs(HitPositionLocalSpace.x - box.Size.x) < 0.00001)) - (float(abs(HitPositionLocalSpace.x - -box.Size.x) < 0.00001)), 
+            (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.00001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.00001)), 
+            (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.00001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.00001)));
 
         vec3 HitTangent = vec3(
-            (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.000001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.000001)),
-            (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.000001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.000001)), 
-            (float(abs(HitPositionLocalSpace.x - box.Size.x) < 0.000001)) - (float(abs(HitPositionLocalSpace.x - -box.Size.x) < 0.000001)));
+            (float(abs(HitPositionLocalSpace.y - box.Size.y) < 0.00001)) - (float(abs(HitPositionLocalSpace.y - -box.Size.y) < 0.00001)),
+            (float(abs(HitPositionLocalSpace.z - box.Size.z) < 0.00001)) - (float(abs(HitPositionLocalSpace.z - -box.Size.z) < 0.00001)), 
+            (float(abs(HitPositionLocalSpace.x - box.Size.x) < 0.00001)) - (float(abs(HitPositionLocalSpace.x - -box.Size.x) < 0.00001)));
 
         vec3 HitBitangent = cross(HitTangent, HitNormal);
 
         vec2 HitUV = vec2(
-            abs(HitPositionLocalSpace.x * abs(HitNormal.z + HitNormal.y) + HitPositionLocalSpace.z * abs(HitNormal.x)),
-            abs(HitPositionLocalSpace.y + HitPositionLocalSpace.z * abs(HitNormal.y))
-        );
+            0.2 + abs(HitPositionLocalSpace.x * abs(HitNormal.z + HitNormal.y) + HitPositionLocalSpace.z * abs(HitNormal.x)),
+            0.2 + abs(HitPositionLocalSpace.y + HitPositionLocalSpace.z * abs(HitNormal.y))) * 0.2;
 
+        vec4 ShadingAlbedo = AlbedoForTextureID(HitUV, box.Material.w);
         vec3 ShadingNormal = normalize(
             mat3(HitTangent, HitBitangent, HitNormal) 
             * 
-            (texture(NormalSampler, HitUV * 0.1).xyz * 2.0 - 1.0));
+            (NormalForTextureID(HitUV, box.Material.w).xyz));
 
-        return HitPayload(
-            box.Colour,
-            HitPositionWorldSpace,
-            ShadingNormal,
-            HitUV,
-            mint,
-            maxt,
-            box.Material,
-            box.Position);
+        if (box.Colour.a == 2.0)
+        {
+            return HitPayload(
+                ShadingAlbedo,
+                HitPositionWorldSpace,
+                ShadingNormal,
+                HitUV,
+                mint,
+                maxt,
+                box.Material,
+                box.Position);
+        }
+        else
+        {
+            return HitPayload(
+                ShadingAlbedo,
+                HitPositionWorldSpace,
+                ShadingNormal,
+                HitUV,
+                mint,
+                maxt,
+                box.Material,
+                box.Position);
+        }
+
+
     }
 
     return last;
@@ -405,7 +463,7 @@ HitPayload TraceRay (Ray ray)
         vec2(0.0, 0.0),
         1000000.0,
         1000000.0,
-        vec3(0.0, 0.0, 0.0),
+        vec4(0.0, 0.0, 0.0, 0.0),
         vec3(0.0, 0.0, 0.0)
     );
 
@@ -513,26 +571,26 @@ vec3 Shadow (HitPayload Hit)
 
 vec3 ShadeDiffuse(HitPayload Hit)
 {
-    vec3 diffuse = Hit.Colour.rgb;
-    if (Hit.Colour.a >= 2.0)
-    {
-        return diffuse;
-    }
+    vec3 diffuse = vec3(0.0, 0.0, 0.0);
+    
+    // rasterize hit
+    diffuse += Hit.Colour.rgb * 1.0;
+    
+    // one bounce
+    Ray BounceRay = Ray(
+        Hit.Position + Hit.Normal * 0.0001, 
+        normalize(Hit.Normal - (randomDirection())));
+    HitPayload BounceHit = TraceRay(BounceRay);
+    diffuse += BounceHit.Colour.rgb * 1.0;
 
-    for (int i = 0; i < NUM_DIFFUSE_SAMPLES; ++i)
-    {
-        vec3 s = vec3(0.0, 0.0, 0.0);
-        for (int i = 0; i < NUM_DIFFUSE_BOUNCES; ++i)
-        {
-            Ray BounceRay = Ray(
-                Hit.Position + Hit.Normal * 0.001, 
-                normalize(Hit.Normal - (randomDirection())));
-            Hit = TraceRay(BounceRay);
-            s += Hit.Colour.rgb * Hit.Colour.a * (1.0 - (float(i) / float(NUM_DIFFUSE_BOUNCES)));
-        }
-        diffuse += s;
-    }
-    return (diffuse / float(NUM_DIFFUSE_SAMPLES)) * Shadow(Hit);
+    // second bounce
+    BounceRay = Ray(
+        BounceHit.Position + BounceHit.Normal * 0.0001,
+        normalize(BounceHit.Normal - (randomDirection())));
+    BounceHit = TraceRay(BounceRay);
+    diffuse += BounceHit.Colour.rgb * 1.0;
+
+    return diffuse / 3.0;
 }
 
 vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
@@ -543,29 +601,14 @@ vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
         return specular;
     }
 
-    Ray LastRay = InitialRay;
-    float Dead = 1.0;
-    for (int i = 0; i < NUM_SPECULAR_BOUNCES; ++i)
-    {
         Ray BounceRay = Ray(
             Hit.Position + Hit.Normal * 0.001,
-            reflect(LastRay.Direction, Hit.Normal));
+            reflect(InitialRay.Direction, Hit.Normal));
         Hit = TraceRay(BounceRay);
 
-        specular += 
-            Dead * 
-            ShadeDiffuse(Hit) * 
-            Hit.Material.x * 
-            (1.0 - (float(i) / float(NUM_SPECULAR_BOUNCES - 1)));
-       
-        if (Hit.Material.y < 0.1)
-        {
-            Dead = 0.0;
-        }
-        LastRay = BounceRay;
-    }
+        specular += ShadeDiffuse(Hit) * Hit.Material.x;
 
-    return specular;// * Shadow(Hit);
+    return specular;
 }
 
 vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
@@ -581,7 +624,7 @@ vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)
         vec3 DirectionToLight = normalize(LightPosition - Hit.Position);
         Lighting += max(dot (DirectionToLight, Hit.Normal), 0.0);
     }
-    return Hit.Colour.rgb * Lighting;
+    return Hit.Colour.rgb * Lighting * Shadow(Hit);
 }
 
 `;

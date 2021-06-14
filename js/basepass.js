@@ -40,11 +40,30 @@ var basePassFragmentShaderFooterSource = `
         Ray PrimaryRay = GenerateRay(frag_uvs + offset);
 
         vec3 Result = vec3(1.0, 1.0, 1.0);
-        float ShadowSample = 1.0;
 
         HitPayload Hit = TraceRay(PrimaryRay);
         if (Hit.t < 100000.0)
         {
+            Result = ShadeDiffuse(Hit) * Hit.Material.x;
+
+            if (Hit.Material.y > 0.0)
+            {
+                Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
+            }
+        }
+        
+        out_color = vec4(Result.rgb , 1.0);
+        out_normal = vec4(1.0);
+        out_uv = vec4(1.0);
+    }`
+
+
+
+
+    /*
+            //Result = ShadeLambertian(Hit, PrimaryRay);
+
+            
             if (Time == 1.0)
             {
                 Result = ShadeLambertian(Hit, PrimaryRay);
@@ -54,12 +73,4 @@ var basePassFragmentShaderFooterSource = `
                 return;
             }
 
-            Result = ShadeDiffuse(Hit) * Hit.Material.x;
-            Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
-
-        }
-        
-        out_color = vec4(Result.rgb , 1.0);
-        out_normal = vec4(1.0);
-        out_uv = vec4(1.0);
-    }`
+    */
