@@ -39,11 +39,13 @@
     var WhiteNoiseTexture = loadTexture(gl, 'images/white.png')
     var BlueNoiseTexture = loadTexture(gl, 'images/blue.png')
     var MandlebrotTexture0 = loadTexture(gl, 'images/brot_3.png')
+    var NormalTexture = loadTexture(gl, 'images/normal2.png')
 
     var basePassPerlinNoiseSampler = gl.getUniformLocation(basePassShaderProgram, "perlinNoiseSampler");
     var basePassWhiteNoiseSampler  = gl.getUniformLocation(basePassShaderProgram, "whiteNoiseSampler");
     var basePassBlueNoiseSampler   = gl.getUniformLocation(basePassShaderProgram, "blueNoiseSampler");
     var basePassBrotSampler   = gl.getUniformLocation(basePassShaderProgram, "brot0Sampler");
+    var basePassNormalSampler = gl.getUniformLocation(basePassShaderProgram, "NormalSampler")
 
     // SCREEN PASS GEOMETRY
     var screenGeometryPositions = new Float32Array([
@@ -77,19 +79,19 @@
 
     // SCENE GEOMETRY
     var SpherePositions = [ 
-         2.0, 0.6,  0.0,
+         0.0, 1.7,  0.0,
         -2.0, 0.6,  0.0,
          0.0, 0.6,  2.0,
          0.0, 0.6, -2.0
     ]
     var SphereColours = [ 
-        1.0, 1.0, 1.0, 1.6,
+        0.3, 0.3, 0.3, 0.0,
         1.0, 1.0, 1.0, 1.6,
         1.0, 1.0, 1.0, 1.6,
         1.0, 1.0, 1.0, 1.6
     ]
     var SphereSizes = [ 
-        0.5,
+        1.5,
         0.5,
         0.5,
         0.5
@@ -103,36 +105,50 @@
     ]
 
     var BoxPositions = [
-        0.0, 7.8, 0.0,  // floor
-        -4.0, 3.9, 0.0,  // floor
-        0.0, 3.9, 4.0,  // floor
         0.0, 0.0, 0.0,  // floor
-        4.0, 3.9, 0.0,  // floor
-        0.0, 1.5, 0.0,  // floor
+        0.0, 10.0, 0.0,  // floor
+
+        -7.0, 8.0, 5.0,  // floor
+        -8.0, 8.0, 0.0,  // floor
+        -7.0, 8.0, -8.0,  // floor
+
+        7.0, 8.0, 5.0,  // floor
+        8.0, 8.0, 0.0,  // floor
+        7.0, 8.0, -8.0,  // floor
     ]
     var BoxColours = [
         0.5, 0.5, 0.5, 0.0, // floor
         0.5, 0.5, 0.5, 0.0, // floor
+
         0.5, 0.5, 0.5, 0.0, // floor
+        0.4, 1.0, 0.4, 2.0, // floor
         0.5, 0.5, 0.5, 0.0, // floor
+
         0.5, 0.5, 0.5, 0.0, // floor
+        1.0, 0.4, 0.4, 2.0, // floor
         0.5, 0.5, 0.5, 0.0, // floor
     ]
     var BoxSizes = [
-        4.0, 0.1, 4.0, // floor
-        0.1, 4.0, 4.0, // floor
-        4.0, 4.0, 0.1, // floor
-        4.0, 0.1, 4.0, // floor
-        0.1, 4.0, 4.0, // floor
-        1.0, 1.5, 1.0,  // floor
+        16.0, 0.1, 16.0, // floor
+        16.0, 0.1, 16.0, // floor
+
+        2.0, 10.0, 4.0, // floor
+        2.0, 10.0, 4.0, // floor
+        2.0, 10.0, 4.0, // floor
+
+        2.0, 10.0, 4.0, // floor
+        2.0, 10.0, 4.0, // floor
+        2.0, 10.0, 4.0, // floor
     ]
     var BoxMaterials = [
         // diffuse   reflective    alpha mask
         1.0,         0.0,          0.0,
-        0.0,         0.4,          0.0,
         1.0,         0.0,          0.0,
         1.0,         0.0,          0.0,
-        0.0,         0.4,          0.0,
+        2.0,         0.0,          0.0,
+        1.0,         0.0,          0.0,
+        1.0,         0.0,          0.0,
+        2.0,         0.0,          0.0,
         1.0,         0.0,          0.0
     ]
 
@@ -282,6 +298,10 @@
         gl.activeTexture(gl.TEXTURE3);
         gl.bindTexture(gl.TEXTURE_2D, MandlebrotTexture0);
         gl.uniform1i(basePassBrotSampler, 3);
+
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, NormalTexture);
+        gl.uniform1i(basePassNormalSampler, 4);
 
         gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(basePassSphereColoursUniformLoc, SphereColours)

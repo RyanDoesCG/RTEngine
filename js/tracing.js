@@ -7,7 +7,7 @@ var tracingShaderCode = `
 
 #define NUM_SPECULAR_BOUNCES 4
 
-#define NUM_SPHERES 4
+#define NUM_SPHERES 1
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -15,7 +15,7 @@ uniform float SphereSizes[NUM_SPHERES];
 uniform vec3   SphereMaterials[NUM_SPHERES];
 #endif
 
-#define NUM_AA_BOXES 5
+#define NUM_AA_BOXES 10
 #if NUM_AA_BOXES > 0
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
@@ -23,25 +23,26 @@ uniform vec3 AABoxSizes[NUM_AA_BOXES];
 uniform vec3  AABoxMaterials[NUM_AA_BOXES];
 #endif
 
-#define NUM_TRIANGLES 8
+#define NUM_TRIANGLES 0 // 8
 #if NUM_TRIANGLES > 0
 uniform vec3 TriangleVertexPositions[NUM_TRIANGLES * 3];
 #endif
 
-#define NUM_AREA_LIGHTS 1
+#define NUM_AREA_LIGHTS 0
 #if NUM_AREA_LIGHTS > 0
 uniform vec3 AreaLightPositions[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightNormals[NUM_AREA_LIGHTS];
 uniform vec3 AreaLightTangents[NUM_AREA_LIGHTS];
 uniform vec4 AreaLightColours[NUM_AREA_LIGHTS];
 uniform vec2 AreaLightSizes[NUM_AREA_LIGHTS];
-uniform vec3  AreaLightMaterials[NUM_AREA_LIGHTS];
+uniform vec3 AreaLightMaterials[NUM_AREA_LIGHTS];
 #endif
 
 uniform sampler2D perlinNoiseSampler;
 uniform sampler2D whiteNoiseSampler;
 uniform sampler2D blueNoiseSampler;
 uniform sampler2D brot0Sampler;
+uniform sampler2D NormalSampler;
 
 uniform float Width;
 uniform float Height;
@@ -211,10 +212,15 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
 
             if (a < 0.1)
             {
+                vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
+                vec3 Bitangent = cross(HitNormal, Tangent);
+                vec3 Normal = HitNormal;
+                mat3 TBN = mat3(Tangent, Bitangent, Normal);
+
                 return HitPayload(
                     sphere.Colour,
                     HitPosition,
-                    HitNormal,
+                    TBN * texture(NormalSampler, HitUV * 5.0).xyz,
                     HitUV,
                     t,
                     t1,
@@ -229,9 +235,7 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
- //           float a = texture(brot0Sampler, HitUV).r * sphere.Material.z;
-
- float a = 1.0 * sphere.Material.z;
+            float a = 1.0 * sphere.Material.z;
             if (abs(0.5 - HitUV.y) > 0.02)
             {
                 a = 0.0;
@@ -239,10 +243,14 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
 
             if (a < 0.1)
             {
+                vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
+                vec3 Bitangent = cross(HitNormal, Tangent);
+                vec3 Normal = HitNormal;
+                mat3 TBN = mat3(Tangent, Bitangent, Normal);
                 return HitPayload(
                     sphere.Colour,
                     HitPosition,
-                    HitNormal,
+                    TBN * texture(NormalSampler, HitUV * 5.0).xyz,
                     HitUV,
                     t1,
                     t,
@@ -307,10 +315,12 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
         vec3 b = normalize(vec3(s.yx, HeightUp - HeightDown));
         vec3 n = cross(a, b).xyz;
 
+        mat3 TBN = mat3(HitTangent, HitBitangent, HitNormal);
+
         return HitPayload(
             box.Colour,
             HitPositionWorldSpace,
-            HitNormal,
+            TBN * texture(NormalSampler, HitUV * 0.1).xyz,
             HitUV,
             mint,
             maxt,
