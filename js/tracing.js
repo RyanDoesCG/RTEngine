@@ -7,7 +7,7 @@ var tracingShaderCode = `
 
 #define NUM_SPECULAR_BOUNCES 1
 
-#define NUM_SPHERES 1
+#define NUM_SPHERES 0
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];
@@ -15,7 +15,7 @@ uniform float SphereSizes[NUM_SPHERES];
 uniform vec4   SphereMaterials[NUM_SPHERES];
 #endif
 
-#define NUM_AA_BOXES 8
+#define NUM_AA_BOXES 10
 #if NUM_AA_BOXES > 0
 uniform vec3 AABoxPositions[NUM_AA_BOXES];
 uniform vec4 AABoxColours[NUM_AA_BOXES];
@@ -26,6 +26,14 @@ uniform vec4  AABoxMaterials[NUM_AA_BOXES];
 #define NUM_TRIANGLES 0
 #if NUM_TRIANGLES > 0
 uniform vec3 TriangleVertexPositions[NUM_TRIANGLES * 3];
+#endif
+
+#define NUM_CYLINDERS 0
+#if NUM_CYLINDERS > 0
+uniform vec3 CylinderPositions[NUM_CYLINDERS];
+uniform vec4 CylinderColours[NUM_CYLINDERS];
+uniform vec3 CylinderSizes[NUM_CYLINDERS];
+uniform vec4 CylinderMaterials[NUM_CYLINDERS];
 #endif
 
 #define NUM_AREA_LIGHTS 1
@@ -48,6 +56,13 @@ uniform sampler2D WoodNormalSampler;
 
 uniform sampler2D ConcreteAlbedoSampler;
 uniform sampler2D ConcreteNormalSampler;
+
+uniform sampler2D FabricAlbedoSampler;
+uniform sampler2D FabricNormalSampler;
+
+uniform sampler2D GoldAlbedoSampler;
+uniform sampler2D GoldNormalSampler;
+uniform sampler2D GoldAlphaSampler;
 
 uniform sampler2D SkyDomeSampler;
 
@@ -83,6 +98,13 @@ struct Triangle {
     vec3 A;
     vec3 B;
     vec3 C;
+    vec4 Material;
+};
+
+struct Cylinder {
+    vec4 Colour;
+    vec3 Position;
+    vec3 Size;
     vec4 Material;
 };
 
@@ -131,32 +153,49 @@ float Grid (vec2 uv, float Thickness)
 vec4 AlbedoForTextureID(vec2 UV, float index)
 {
     if (index == 0.0) return texture(ConcreteAlbedoSampler, UV);
+
     if (index == 1.0) return texture(WoodAlbedoSampler, UV);
+
     if (index == 2.0) return vec4(Grid(UV, 0.9));
+
     if (index == 3.0) return vec4(0.2);
+
+    if (index == 4.0) return texture(FabricAlbedoSampler, UV);
+
+    if (index == 5.0) return texture(GoldAlbedoSampler, UV);
+
     return vec4(1.0, 0.0, 1.0, 1.0);
 }
 
 vec4 NormalForTextureID(vec2 UV, float index)
 {
-    if (index == 0.0) 
-    {
-        return -1.0 + texture(ConcreteNormalSampler, UV) * 2.0;
-    }
+    if (index == 0.0) return -1.0 + texture(ConcreteNormalSampler, UV) * 2.0;
 
-    if (index == 1.0) 
-    {
-        return -1.0 + texture(WoodNormalSampler, UV) * 2.0;
-    }
+    if (index == 1.0) return -1.0 + texture(WoodNormalSampler, UV) * 2.0;
 
-    if (index == 2.0) 
-    {
-        return vec4(0.0, 0.0, 1.0, 0.0);
-    }
+    if (index == 2.0) return vec4(0.0, 0.0, 1.0, 0.0);
+    
+    if (index == 4.0) return -1.0 + texture(FabricNormalSampler, UV) * 2.0;
+
+    if (index == 5.0) return -1.0 + texture(GoldNormalSampler, UV) * 2.0;
 
     return vec4(0.0, 0.0, 1.0, 0.0);
 }
 
+float AlphaForTextureID(vec2 UV, float index)
+{
+    if (index == 0.0) return 1.0;
+
+    if (index == 1.0) return 1.0;
+
+    if (index == 2.0) return 1.0;
+    
+    if (index == 4.0) return 1.0;
+
+    if (index == 5.0) return texture(GoldAlphaSampler, UV).x;
+
+    return 1.0;  
+}
 
 float seed = 0.0;
 float random ()
@@ -238,13 +277,9 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = 1.0 * sphere.Material.z;
-            if (abs(0.5 - HitUV.y) > 0.02)
-            {
-                a = 0.0;
-            }
+            float a = AlphaForTextureID(HitUV, sphere.Material.w);
 
-            if (a < 0.1)
+            if (a > 0.1)
             {
                 vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
                 vec3 Bitangent = cross(HitNormal, Tangent);
@@ -274,13 +309,9 @@ HitPayload IntersectRaySphere (Ray ray, HitPayload last, Sphere sphere)
             vec3 HitNormal   = normalize(HitPosition - sphere.Position);
             vec2 HitUV       = SphereUV(HitNormal);
 
-            float a = 1.0 * sphere.Material.z;
-            if (abs(0.5 - HitUV.y) > 0.02)
-            {
-                a = 0.0;
-            }
+            float a = AlphaForTextureID(HitUV, sphere.Material.w);
 
-            if (a < 0.1)
+            if (a > 0.1)
             {
                 vec3 Tangent = normalize(cross(vec3(0.0, 1.0, 0.0), HitPosition - sphere.Position));
                 vec3 Bitangent = cross(HitNormal, Tangent);
@@ -351,32 +382,34 @@ HitPayload IntersectRayAABox(Ray ray, HitPayload last, AABox box)
             * 
             (NormalForTextureID(HitUV, box.Material.w).xyz));
 
-        if (box.Colour.a == 2.0)
+        float a = AlphaForTextureID(HitUV, box.Material.w);
+        if (a > 0.25)
         {
-            return HitPayload(
-                ShadingAlbedo,
-                HitPositionWorldSpace,
-                ShadingNormal,
-                HitUV,
-                mint,
-                maxt,
-                box.Material,
-                box.Position);
+            if (box.Colour.a == 2.0)
+            {
+                return HitPayload(
+                    ShadingAlbedo,
+                    HitPositionWorldSpace,
+                    ShadingNormal,
+                    HitUV,
+                    mint,
+                    maxt,
+                    box.Material,
+                    box.Position);
+            }
+            else
+            {
+                return HitPayload(
+                    ShadingAlbedo,
+                    HitPositionWorldSpace,
+                    ShadingNormal,
+                    HitUV,
+                    mint,
+                    maxt,
+                    box.Material,
+                    box.Position);
+            }
         }
-        else
-        {
-            return HitPayload(
-                ShadingAlbedo,
-                HitPositionWorldSpace,
-                ShadingNormal,
-                HitUV,
-                mint,
-                maxt,
-                box.Material,
-                box.Position);
-        }
-
-
     }
 
     return last;
@@ -454,6 +487,60 @@ HitPayload IntersectRayTriangle (Ray ray, HitPayload last, Triangle tri)
     return last;
 }
 
+HitPayload IntersectRayCylinder(Ray ray, HitPayload last, Cylinder cylinder)
+{
+    float a = (ray.Direction.x * ray.Direction.x) + (ray.Direction.z * ray.Direction.z);
+    float b = 2.0 * (ray.Direction.x * (ray.Origin.x - cylinder.Position.x) + ray.Direction.z * (ray.Origin.z - cylinder.Position.z));
+    float c = 
+        (ray.Origin.x - cylinder.Position.x) 
+        * 
+        (ray.Origin.x - cylinder.Position.x) 
+        + 
+        (ray.Origin.z - cylinder.Position.z) 
+        * 
+        (ray.Origin.z - cylinder.Position.z) 
+        -
+        (cylinder.Size.x * cylinder.Size.x);
+    
+    float d = b * b - 4.0 * (a * c);
+
+    if (abs(d) < 0.001) return last;
+    if (d < 0.0) return last;
+
+    float t0 = (-b - sqrt(d)) / (2.0 * a);
+    float t1 = (-b + sqrt(d)) / (2.0 * a);
+
+    float r = ray.Origin.y + t0 * ray.Direction.y;
+    if (r >= cylinder.Position.y && r <= cylinder.Position.y + cylinder.Size.y && t0 < last.t)
+    {
+        return HitPayload (
+            cylinder.Colour,
+            ray.Origin + ray.Direction * t0,
+            vec3(0.0, 1.0, 0.0),
+            vec2(0.0, 0.0),
+            t0,
+            t1,
+            cylinder.Material,
+            cylinder.Position);
+    }
+
+    r = ray.Origin.y + t1 * ray.Direction.y;
+    if (r >= cylinder.Position.y && r <= cylinder.Position.y + cylinder.Size.y && t1 < last.t)
+    {
+        return HitPayload (
+            cylinder.Colour,
+            ray.Origin + ray.Direction * t1,
+            vec3(0.0, 1.0, 0.0),
+            vec2(0.0, 0.0),
+            t1,
+            t0,
+            cylinder.Material,
+            cylinder.Position);
+    }
+
+    return last;
+}
+
 HitPayload TraceRay (Ray ray)
 {
     HitPayload Hit = HitPayload(
@@ -517,6 +604,20 @@ HitPayload TraceRay (Ray ray)
         ));
     }
     #endif
+
+    #if NUM_CYLINDERS > 0
+    for (int i = 0 ; i < NUM_CYLINDERS; ++i)
+    {
+        Hit = IntersectRayCylinder(ray, Hit, Cylinder(
+            CylinderColours[i],
+            CylinderPositions[i],
+            CylinderSizes[i],
+            CylinderMaterials[i]
+        ));
+    }
+    #endif
+
+
 
     return Hit;
 }
@@ -595,20 +696,15 @@ vec3 ShadeDiffuse(HitPayload Hit)
 
 vec3 ShadeReflective(HitPayload Hit, Ray InitialRay)
 {
-    vec3 specular = Hit.Colour.rgb;
     if (Hit.Colour.a >= 2.0)
-    {
-        return specular;
-    }
+        return Hit.Colour.rgb;
 
-        Ray BounceRay = Ray(
-            Hit.Position + Hit.Normal * 0.001,
-            reflect(InitialRay.Direction, Hit.Normal));
-        Hit = TraceRay(BounceRay);
+    Ray BounceRay = Ray(
+        Hit.Position + Hit.Normal * 0.001,
+        reflect(InitialRay.Direction, Hit.Normal));
+    Hit = TraceRay(BounceRay);
 
-        specular += ShadeDiffuse(Hit) * Hit.Material.x;
-
-    return specular;
+    return ShadeDiffuse(Hit) * Hit.Material.x;
 }
 
 vec3 ShadeLambertian(HitPayload Hit, Ray InitialRay)

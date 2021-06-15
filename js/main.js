@@ -42,8 +42,16 @@
 
     var WoodAlbedoTexture = loadTexture(gl, 'images/wood/wood_albedo.jpg')
     var WoodNormalTexture = loadTexture(gl, 'images/wood/wood_normal.jpg')
+
     var ConcreteAlbedoTexture = loadTexture(gl, 'images/concrete/concrete_albedo.jpg')
     var ConcreteNormalTexture = loadTexture(gl, 'images/concrete/concrete_normal.jpg')
+
+    var FabricAlbedoTexture = loadTexture(gl, 'images/fabric/fabric_albedo.jpg')
+    var FabricNormalTexture = loadTexture(gl, 'images/fabric/fabric_normal.jpg')
+
+    var GoldAlbedoTexture = loadTexture(gl, 'images/gold/gold_albedo.jpg')
+    var GoldNormalTexture = loadTexture(gl, 'images/gold/gold_normal.jpg')
+    var GoldAlphaTexture = loadTexture(gl, 'images/gold/gold_alpha.jpg')
 
     var SkyDomeTexture = loadTexture(gl, 'images/skydome.jpg')
 
@@ -57,6 +65,13 @@
 
     var basePassConcreteAlbedoSampler = gl.getUniformLocation(basePassShaderProgram, "ConcreteAlbedoSampler")
     var basePassConcreteNormalSampler = gl.getUniformLocation(basePassShaderProgram, "ConcreteNormalSampler")
+
+    var basePassFabricAlbedoSampler = gl.getUniformLocation(basePassShaderProgram, "FabricAlbedoSampler")
+    var basePassFabricNormalSampler = gl.getUniformLocation(basePassShaderProgram, "FabricNormalSampler")
+
+    var basePassGoldAlbedoSampler = gl.getUniformLocation(basePassShaderProgram, "GoldAlbedoSampler")
+    var basePassGoldNormalSampler = gl.getUniformLocation(basePassShaderProgram, "GoldNormalSampler")
+    var basePassGoldAlphaSampler = gl.getUniformLocation(basePassShaderProgram,  "GoldAlphaSampler")
 
     var basePassSkyDomeSampler = gl.getUniformLocation(basePassShaderProgram, "SkyDomeSampler");
 
@@ -93,7 +108,7 @@
     // SCENE GEOMETRY
     // SCENE GEOMETRY
     var SpherePositions = [ 
-        0.0, 1.7,  0.0,
+        0.0, 1.65,  0.0,
         0.0, 0.0,  0.0
    ]
    var SphereColours = [ 
@@ -106,7 +121,7 @@
    ]
    var SphereMaterials = [
        // diffuse   reflective    alpha mask   // texture index
-       0.8,         0.0,          0.0,         3.0,
+       0.8,         0.0,          1.0,         3.0,
        1.0,         0.0,          0.0,         0.0
    ]
 
@@ -119,9 +134,12 @@
        0.0, 7.8, -3.0,  // floor
        3.0, 7.8, 0.0,
        -3.0, 7.8, 0.0,
-        0.0, 7.8, 0.0
+        0.0, 0.1, 0.0,  // floor  
+        0.0, 3.9, -4.0,  // floor  
    ]
    var BoxColours = [
+       0.5, 0.5, 0.5, 0.0, // floor
+       0.5, 0.5, 0.5, 0.0, // floor
        0.5, 0.5, 0.5, 0.0, // floor
        0.5, 0.5, 0.5, 0.0, // floor
        0.5, 0.5, 0.5, 0.0, // floor
@@ -141,19 +159,21 @@
        4.0, 0.1, 1.0, // floor
        1.0, 0.1, 2.0, // floor
        1.0, 0.1, 2.0, // floor
-       1.0, 0.1, 2.0, // floor
+       3.0, 0.025, 3.0, // floor
+       4.0, 4.0, 0.1, // floor
    ]
    var BoxMaterials = [
        // diffuse   reflective    alpha mask  texture index
        1.0,         0.0,          0.0,        0.0,
        1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        0.0, 
+       0.0,         0.4,          0.0,        3.0, 
        1.0,         0.0,          0.0,        1.0, 
        1.0,         0.0,          0.0,        0.0, 
        1.0,         0.0,          0.0,        0.0, 
        1.0,         0.0,          0.0,        0.0, 
        1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        0.0
+       1.0,         0.0,          0.0,        4.0,
+       1.0,         0.0,          0.0,        0.0, 
    ]
 
    var TriangleVertexPositions = [
@@ -189,6 +209,22 @@
          1.0, 2.0, -1.0,
          1.0, 2.0,  1.0,
          0.0, 0.2,  0.0
+   ]
+
+   var CylinderPositions = [
+        0.0, 0.0, 0.0
+   ]
+
+   var CylinderSizes = [
+        0.5, 3.0, 0.5
+   ]
+
+   var CylinderColours = [
+        0.5, 0.5, 0.5, 1.0
+   ]
+   
+   var CylinderMaterials = [ 
+        1.0, 0.0, 0.0, 0.0
    ]
 
    var AreaLightPositions = [
@@ -230,6 +266,11 @@
     var basePassBoxColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxColours")
     var basePassBoxSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxSizes")
     var basePassBoxMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AABoxMaterials")
+
+    var basePassCylinderPositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "CylinderPositions")
+    var basePassCylinderColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "CylinderColours")
+    var basePassCylinderSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram, "CylinderSizes")
+    var basePassCylinderMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "CylinderMaterials")
 
     var basePassTriangleVertexPositionsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "TriangleVertexPositions")
 
@@ -320,8 +361,24 @@
         gl.uniform1i(basePassWoodNormalSampler, 7);
 
         gl.activeTexture(gl.TEXTURE8);
-        gl.bindTexture(gl.TEXTURE_2D, SkyDomeTexture);
-        gl.uniform1i(basePassSkyDomeSampler, 8);
+        gl.bindTexture(gl.TEXTURE_2D, FabricAlbedoTexture);
+        gl.uniform1i(basePassFabricAlbedoSampler, 8);
+
+        gl.activeTexture(gl.TEXTURE9);
+        gl.bindTexture(gl.TEXTURE_2D, FabricNormalTexture);
+        gl.uniform1i(basePassFabricNormalSampler, 9);
+
+        gl.activeTexture(gl.TEXTURE10);
+        gl.bindTexture(gl.TEXTURE_2D, GoldAlbedoTexture);
+        gl.uniform1i(basePassGoldAlbedoSampler, 10);
+
+        gl.activeTexture(gl.TEXTURE11);
+        gl.bindTexture(gl.TEXTURE_2D, GoldNormalTexture);
+        gl.uniform1i(basePassGoldNormalSampler, 11);
+
+        gl.activeTexture(gl.TEXTURE12);
+        gl.bindTexture(gl.TEXTURE_2D, GoldAlphaTexture);
+        gl.uniform1i(basePassGoldAlphaSampler, 12);
 
         gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(basePassSphereColoursUniformLoc, SphereColours)
@@ -332,6 +389,11 @@
         gl.uniform4fv(basePassBoxColoursUniformLoc, BoxColours)
         gl.uniform3fv(basePassBoxSizesUniformLoc, BoxSizes)
         gl.uniform4fv(basePassBoxMaterialsUniformLoc, BoxMaterials)
+
+        gl.uniform3fv(basePassCylinderPositionUniformLoc, CylinderPositions)
+        gl.uniform4fv(basePassCylinderColoursUniformLoc, CylinderColours)
+        gl.uniform3fv(basePassCylinderSizesUniformLoc, CylinderSizes)
+        gl.uniform4fv(basePassCylinderMaterialsUniformLoc, CylinderMaterials)
 
         gl.uniform3fv(basePassTriangleVertexPositionsUniformLoc, TriangleVertexPositions)
 
