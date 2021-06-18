@@ -106,156 +106,134 @@
     gl.enableVertexAttribArray(1);
 
     // SCENE GEOMETRY
-    // SCENE GEOMETRY
+    var SphereColours = [ 
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.6
+    ]
+    var SphereMaterials = [
+        // diffuse   reflective    alpha mask   // texture index
+        0.8,         0.0,          1.0,         3.0,
+        1.0,         0.0,          0.0,         0.0
+    ]
     var SpherePositions = [ 
         0.0, 1.65,  0.0,
         0.0, 0.0,  0.0
-   ]
-   var SphereColours = [ 
-       1.0, 1.0, 1.0, 1.0,
-       1.0, 1.0, 1.0, 1.6
-   ]
-   var SphereSizes = [ 
-       1.5,
-       100.0
-   ]
-   var SphereMaterials = [
-       // diffuse   reflective    alpha mask   // texture index
-       0.8,         0.0,          1.0,         3.0,
-       1.0,         0.0,          0.0,         0.0
-   ]
+    ]
+    var SphereSizes = [ 
+        1.5,
+        100.0
+    ]
 
-   var BoxPositions = [
-       0.0, 7.8, 3.0,  // floor
-       -4.1, 3.9, 0.0,  // floor
-       0.0, 3.9, 4.0,  // floor
-       0.0, 0.0, 0.0,  // floor
-       4.1, 3.9, 0.0,  // floor
-       0.0, 7.8, -3.0,  // floor
-       3.0, 7.8, 0.0,
-       -3.0, 7.8, 0.0,
+    var BoxMaterials = [
+        // diffuse   reflective    alpha mask  texture index
+        1.0,         0.0,          0.0,        0.0,
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        1.0, 
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        0.0, 
+        1.0,         0.0,          0.0,        4.0,
+        1.0,         0.0,          0.0,        0.0, 
+    ]
+    var BoxColours = [
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+        0.5, 0.5, 0.5, 0.0, // floor
+    ]
+    var BoxPositions = [
+        0.0, 7.8, 3.0,  // floor
+        -4.1, 3.9, 0.0,  // floor
+        0.0, 3.9, 4.0,  // floor
+        0.0, 0.0, 0.0,  // floor
+        4.1, 3.9, 0.0,  // floor
+        0.0, 7.8, -3.0,  // floor
+        3.0, 7.8, 0.0,
+        -3.0, 7.8, 0.0,
         0.0, 0.1, 0.0,  // floor  
         0.0, 3.9, -4.0,  // floor  
-   ]
-   var BoxColours = [
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-       0.5, 0.5, 0.5, 0.0, // floor
-   ]
-   var BoxSizes = [
-       4.0, 0.1, 1.0, // floor
-       0.1, 4.0, 4.0, // floor
-       4.0, 4.0, 0.1, // floor
-       4.0, 0.1, 4.0, // floor
-       0.1, 4.0, 4.0, // floor
-       4.0, 0.1, 1.0, // floor
-       1.0, 0.1, 2.0, // floor
-       1.0, 0.1, 2.0, // floor
-       3.0, 0.025, 3.0, // floor
-       4.0, 4.0, 0.1, // floor
-   ]
-   var BoxMaterials = [
-       // diffuse   reflective    alpha mask  texture index
-       1.0,         0.0,          0.0,        0.0,
-       1.0,         0.0,          0.0,        0.0, 
-       0.0,         0.4,          0.0,        3.0, 
-       1.0,         0.0,          0.0,        1.0, 
-       1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        0.0, 
-       1.0,         0.0,          0.0,        4.0,
-       1.0,         0.0,          0.0,        0.0, 
-   ]
-
-   var TriangleVertexPositions = [
-        1.0, 2.0, -1.0,
-       -1.0, 2.0, -1.0,
-        0.0, 3.8,  0.0,
-
-       -1.0, 2.0,  1.0,
-        1.0, 2.0,  1.0,
-        0.0, 3.8,  0.0,
-
-       -1.0, 2.0, -1.0,
-       -1.0, 2.0,  1.0,
-        0.0, 3.8,  0.0,
-
-        1.0, 2.0,  1.0,
-        1.0, 2.0, -1.0,
-        0.0, 3.8,  0.0,
+    ]
+    var BoxSizes = [
+        4.0, 0.1, 1.0, // floor
+        0.1, 4.0, 4.0, // floor
+        4.0, 4.0, 0.1, // floor
+        4.0, 0.1, 4.0, // floor
+        0.1, 4.0, 4.0, // floor
+        4.0, 0.1, 1.0, // floor
+        1.0, 0.1, 2.0, // floor
+        1.0, 0.1, 2.0, // floor
+        3.0, 0.025, 3.0, // floor
+        4.0, 4.0, 0.1, // floor
+    ]
 
 
-        -1.0, 2.0, -1.0,
-         1.0, 2.0, -1.0,
-         0.0, 0.2,  0.0,
+    var TriangleVertexPositions = []
 
-         1.0, 2.0,  1.0,
-        -1.0, 2.0,  1.0,
-         0.0, 0.2,  0.0,
+    var PlaneSize = 8.0;
+    var GridSize = 16;
+    var TriangleSize = PlaneSize / GridSize;
 
-        -1.0, 2.0,  1.0,
-        -1.0, 2.0, -1.0,
-         0.0, 0.2,  0.0,
- 
-         1.0, 2.0, -1.0,
-         1.0, 2.0,  1.0,
-         0.0, 0.2,  0.0
-   ]
+    for (var i = 0; i < GridSize; ++i)
+    {
+        var minX = -(PlaneSize*0.5) + i * TriangleSize;
+        var maxX = -(PlaneSize*0.5) + (i + 1) * TriangleSize;
+        var minZ = 0.0;
+        var maxZ = TriangleSize;
 
-   var CylinderPositions = [
-        0.0, 0.0, 0.0
-   ]
-
-   var CylinderSizes = [
-        0.5, 3.0, 0.5
-   ]
-
-   var CylinderColours = [
-        0.5, 0.5, 0.5, 1.0
-   ]
-   
-   var CylinderMaterials = [ 
+        TriangleVertexPositions.push(maxX, 3.0 + sin(maxX) , minZ)
+        TriangleVertexPositions.push(minX, 3.0 + sin(minX) , minZ)
+        TriangleVertexPositions.push(maxX, 3.0 + sin(maxX) , maxZ)
+        TriangleVertexPositions.push(minX, 3.0 + sin(minX) , minZ)
+        TriangleVertexPositions.push(minX, 3.0 + sin(minX) , maxZ)
+        TriangleVertexPositions.push(maxX, 3.0 + sin(maxX) , maxZ)
+    }
+    
+    var CylinderPositions = [
+            0.0, 0.0, 0.0
+    ]
+    var CylinderMaterials = [ 
         1.0, 0.0, 0.0, 0.0
-   ]
+    ]
+    var CylinderSizes = [
+            0.1, 8.0, 0.1
+    ]
+    var CylinderColours = [
+            0.5, 0.5, 0.5, 1.0
+    ]
 
-   var AreaLightPositions = [
-       0.0, 8.0, 0.0,
-       0.0, 1.0, 0.0
-   ]
-   var AreaLightRotations = [
-       0.0, 0.0, 0.0,
-       0.0, 0.0, -0.6
-   ]
-   var AreaLightNormals = [
-       0.0, -1.0,  0.0,
-       0.0, -1.0,  0.0
-   ]
-   var AreaLightTangents = [
-       0.0,  0.0, -1.0,
-       0.0,  0.0, -1.0
-   ]
-   var AreaLightColours = [
-       6.0, 6.0, 6.0, 2.0, // light
-       0.3, 0.0, 0.0, 2.0  // light
-   ]
-   var AreaLightSizes = [
-       6.0, 6.0, // light
-       10.0, 2.0  // light
-   ]
-   var AreaLightMaterials = [
-       // diffuse   reflective    alpha mask
-       1.0,         0.0,          0.0,       0.0,
-       1.0,         0.0,          0.0,       0.0
-   ]
+    var AreaLightPositions = [
+        0.0, 8.0, 0.0,
+        0.0, 1.0, 0.0
+    ]
+    var AreaLightRotations = [
+        0.0, 0.0, 0.0,
+        0.0, 0.0, -0.6
+    ]
+    var AreaLightNormals = [
+        0.0, -1.0,  0.0,
+        0.0, -1.0,  0.0
+    ]
+    var AreaLightTangents = [
+        0.0,  0.0, -1.0,
+        0.0,  0.0, -1.0
+    ]
+    var AreaLightColours = [
+        6.0, 6.0, 6.0, 2.0, // light
+        0.3, 0.0, 0.0, 2.0  // light
+    ]
+    var AreaLightSizes = [
+        6.0, 6.0, // light
+        10.0, 2.0  // light
+    ]
 
     var basePassSpherePositionUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SpherePositions")
     var basePassSphereColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram, "SphereColours")
@@ -279,8 +257,7 @@
     var basePassAreaLightTangentUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightTangents")
     var basePassAreaLightColoursUniformLoc = gl.getUniformLocation(basePassShaderProgram,   "AreaLightColours")
     var basePassAreaLightSizesUniformLoc = gl.getUniformLocation(basePassShaderProgram,     "AreaLightSizes")
-    var basePassAreaLightMaterialsUniformLoc = gl.getUniformLocation(basePassShaderProgram, "AreaLightMaterials")
-
+  
     var basePassWidthUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Width")
     var basePassHeightUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Height")
     var basePassTimeUniformLoc = gl.getUniformLocation(basePassShaderProgram, "Time")
@@ -380,20 +357,21 @@
         gl.bindTexture(gl.TEXTURE_2D, GoldAlphaTexture);
         gl.uniform1i(basePassGoldAlphaSampler, 12);
 
-        gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
         gl.uniform4fv(basePassSphereColoursUniformLoc, SphereColours)
-        gl.uniform1fv(basePassSphereSizesUniformLoc, SphereSizes)
         gl.uniform4fv(basePassSphereMaterialsUniformLoc, SphereMaterials)
+        gl.uniform3fv(basePassSpherePositionUniformLoc, SpherePositions)
+        gl.uniform1fv(basePassSphereSizesUniformLoc, SphereSizes)
 
-        gl.uniform3fv(basePassBoxPositionUniformLoc, BoxPositions)
         gl.uniform4fv(basePassBoxColoursUniformLoc, BoxColours)
-        gl.uniform3fv(basePassBoxSizesUniformLoc, BoxSizes)
         gl.uniform4fv(basePassBoxMaterialsUniformLoc, BoxMaterials)
+        gl.uniform3fv(basePassBoxPositionUniformLoc, BoxPositions)
+        gl.uniform3fv(basePassBoxSizesUniformLoc, BoxSizes)
 
-        gl.uniform3fv(basePassCylinderPositionUniformLoc, CylinderPositions)
+
         gl.uniform4fv(basePassCylinderColoursUniformLoc, CylinderColours)
-        gl.uniform3fv(basePassCylinderSizesUniformLoc, CylinderSizes)
         gl.uniform4fv(basePassCylinderMaterialsUniformLoc, CylinderMaterials)
+        gl.uniform3fv(basePassCylinderPositionUniformLoc, CylinderPositions)
+        gl.uniform3fv(basePassCylinderSizesUniformLoc, CylinderSizes)
 
         gl.uniform3fv(basePassTriangleVertexPositionsUniformLoc, TriangleVertexPositions)
 
@@ -402,7 +380,6 @@
         gl.uniform3fv(basePassAreaLightTangentUniformLoc,  AreaLightTangents)
         gl.uniform4fv(basePassAreaLightColoursUniformLoc,  AreaLightColours)
         gl.uniform2fv(basePassAreaLightSizesUniformLoc,    AreaLightSizes)
-        gl.uniform4fv(basePassAreaLightMaterialsUniformLoc, AreaLightMaterials)
 
         gl.uniform1f (basePassWidthUniformLoc, canvas.clientWidth)
         gl.uniform1f (basePassHeightUniformLoc, canvas.clientHeight)
