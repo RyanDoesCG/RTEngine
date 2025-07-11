@@ -30,7 +30,7 @@ var basePassFragmentShaderFooterSource = `
 
     void main() 
     {
-        vec2 offset = vec2(random(-1.0, 1.0), random(-1.0, 1.0)) * AA_OFFSET;
+        vec2 offset = vec2(random(-1.0, 1.0, 0.124124), random(-1.0, 1.0, 1.634553)) * AA_OFFSET;
 
         if (Time == 1.0)
         {
