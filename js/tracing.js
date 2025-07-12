@@ -7,7 +7,7 @@ var tracingShaderCode = `
 
 #define NUM_SPECULAR_BOUNCES 1
 
-#define NUM_SPHERES 0
+#define NUM_SPHERES 1
 #if NUM_SPHERES > 0
 uniform vec3  SpherePositions[NUM_SPHERES];
 uniform vec4  SphereColours[NUM_SPHERES];

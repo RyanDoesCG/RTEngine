@@ -108,7 +108,7 @@
     // SCENE GEOMETRY
     // SCENE GEOMETRY
     var SpherePositions = [ 
-        0.0, 1.65,  0.0,
+        0.0, 1.1,  0.0,
         0.0, 0.0,  0.0
    ]
    var SphereColours = [ 
@@ -116,7 +116,7 @@
        1.0, 1.0, 1.0, 1.6
    ]
    var SphereSizes = [ 
-       1.5,
+       1.0,
        100.0
    ]
    var SphereMaterials = [

@@ -27,30 +27,41 @@ var basePassFragmentShaderHeaderSource =
 
 var basePassFragmentShaderFooterSource = `
     #define AA_OFFSET 0.005
+    #define N_SAMPLES 4
 
     void main() 
     {
-        vec2 offset = vec2(random(-1.0, 1.0, 0.124124), random(-1.0, 1.0, 1.634553)) * AA_OFFSET;
-
-        if (Time == 1.0)
-        {
-            offset = vec2(0.0, 0.0);
-        }
-
-        Ray PrimaryRay = GenerateRay(frag_uvs + offset);
 
         vec3 Result = vec3(1.0, 1.0, 1.0);
 
-        HitPayload Hit = TraceRay(PrimaryRay);
-        if (Hit.t < 100000.0)
+        for (int i = 0; i < N_SAMPLES; ++i)
         {
-            Result = ShadeDiffuse(Hit) * Hit.Material.x;
-
-            if (Hit.Material.y > 0.0)
+            vec2 offset = vec2(
+                random(-1.0, 1.0, 0.124124 + float(i) * 0.01), 
+                random(-1.0, 1.0, 1.634553 + float(i)) * 0.01)
+                * AA_OFFSET;
+            if (Time == 1.0)
             {
-                Result += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
+                offset = vec2(0.0, 0.0);
+            }
+
+            Ray PrimaryRay = GenerateRay(frag_uvs + offset);
+
+            HitPayload Hit = TraceRay(PrimaryRay);
+            if (Hit.t < 100000.0)
+            {
+                vec3 Samp = ShadeDiffuse(Hit) * Hit.Material.x;
+
+                if (Hit.Material.y > 0.0)
+                {
+                    Samp += ShadeReflective(Hit, PrimaryRay) * Hit.Material.y;
+                }
+
+                Result += Samp;
             }
         }
+
+        Result /= float(N_SAMPLES);
         
         out_color = vec4(Result.rgb , 1.0);
         out_normal = vec4(1.0);
